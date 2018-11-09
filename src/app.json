@@ -1,0 +1,64 @@
+{
+  "pages": [
+    "pages/index/main",
+    "pages/level/main",
+    "pages/launch/main",
+    "pages/more/main",
+    "pages/my/main",
+    "pages/material/main",
+    "pages/play-types/text/main",
+    "pages/play-types/picture/main",
+    "pages/play-types/vioce/main",
+    "pages/play-detail/text/begin/main",
+    "pages/play-detail/picture/begin/main",
+    "pages/play-detail/text/playing/main",
+    "pages/play-detail/picture/playing/main",
+    "pages/play-detail/fail/main",
+    "pages/red-package/detail/main"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FF4347",
+    "navigationBarTitleText": "包你说",
+    "navigationBarTextStyle": "light",
+    "navigationStyle":"default"
+  },
+  "tabBar": {
+    "color": "#999",
+    "selectedColor": "#DE4C56",
+    "backgroundColor": "#f9f9f9",
+    "borderStyle": "#9b9b9b",
+    "list": [
+      {
+        "pagePath": "pages/index/main",
+        "text": "红包广场",
+        "iconPath": "static/images/ground.png",
+        "selectedIconPath": "static/images/red_ground.png"
+      },
+      {
+        "pagePath": "pages/level/main",
+        "text": "排行榜",
+        "iconPath": "static/images/level.png",
+        "selectedIconPath": "static/images/red_level.png"
+      },
+      {
+        "pagePath": "pages/launch/main",
+        "text": "发一个",
+        "iconPath": "static/images/package.png",
+        "selectedIconPath": "static/images/red_package.png"
+      },
+      {
+        "pagePath": "pages/more/main",
+        "text": "更多玩法",
+        "iconPath": "static/images/more.png",
+        "selectedIconPath": "static/images/red_more.png"
+      },
+      {
+        "pagePath": "pages/my/main",
+        "text": "我的",
+        "iconPath": "static/images/my.png",
+        "selectedIconPath": "static/images/red_my.png"
+      }
+    ]
+  }
+}
