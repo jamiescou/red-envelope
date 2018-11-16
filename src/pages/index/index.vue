@@ -2,124 +2,140 @@
   <div class="container">
     <div class="ground_outer" @click="showModal()">
       <div class="ground_inner">
-        <div @click="redPackageDetail(item)" class="package_list" v-for="item in packageData" :key="item.createtime">
-          <!-- 头像 -->
-          <div class="head_img">
-            <img class="_img" :src="item.headImg" alt="">
+        <scroll-view scroll-y
+          :style='scrollStyles'
+          upper-threshold='50'
+          lower-threshold='50'
+          @scrolltoupper="upper"
+          @scrolltolower="lower"
+          @scroll="scroll"
+          scroll-top="scrollTop">
+          <div @click="redPackageDetail(item)" class="package_list" v-for="item in packageData" :key="item.id">
+            <!-- 头像 -->
+            <div class="head_img">
+              <img class="_img" :src="item.headImg" alt="">
+            </div>
+            <!-- 昵称 -->
+            <div class="nick_name">
+              <div class="_name">
+                {{item.nickname}}
+              </div>
+              <div class="sex_type">
+                <img :src="item.sex === 1 ? '../../static/images/male.png' : '../../static/images/female.png'" alt="">
+              </div>
+            </div>
+            <!-- 红包个数金额 -->
+            <div class="package_info">
+              <div class="package_money">
+                ￥{{item.money}}
+              </div>
+              <div class="package_num">
+                {{item.giveOffNum}}/{{item.num}}
+              </div>
+            </div>
+            <!-- 红包类型 -->
+            <div class="package_type">
+              <div class="type_name">
+                {{typeMap[item.type]}}
+              </div>
+              <div class="creat_time">
+                {{item.createTime}}
+              </div>
+            </div>
           </div>
-          <!-- 昵称 -->
-          <div class="nick_name">
-            <div class="_name">
-              {{item.nickname}}
-            </div>
-            <div class="sex_type">
-              <img :src="item.sex === '1' ? '../../static/images/male.png' : '../../static/images/female.png'" alt="">
-            </div>
-          </div>
-          <!-- 红包个数金额 -->
-          <div class="package_info">
-            <div class="package_money">
-              ￥{{item.price}}
-            </div>
-            <div class="package_num">
-              {{item.getNum}}/{{item.countNum}}
-            </div>
-          </div>
-          <!-- 红包类型 -->
-          <div class="package_type">
-            <div class="type_name">
-              {{item.pricetype}}
-            </div>
-            <div class="creat_time">
-              {{item.createtime}}
-            </div>
-          </div>
-        </div>
+        </scroll-view>
       </div>
     </div>
   </div>
 </template>
-
 <script>
+import {checkAuthorize, getCurrentPageUrlWithArgs} from '../../utils/index'
 export default {
   data () {
     return {
-      packageData: [
-        {
-          headImg: '../../static/images/test_img.png',
-          nickname: '小黑',
-          price: 888,
-          pricetype: '语音口令红包',
-          createtime: '10-18 10:22',
-          sex: '1',
-          countNum: 10,
-          getNum: 5,
-          type: 1
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickname: '小明',
-          price: 1000,
-          pricetype: '拼字红包',
-          createtime: '10-17 12:22',
-          sex: '1',
-          countNum: 8,
-          getNum: 3,
-          type: 2
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickname: '小红',
-          price: 666,
-          pricetype: '拼图红包',
-          createtime: '10-15 10:22',
-          sex: '2',
-          countNum: 5,
-          getNum: 2,
-          type: 3
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickname: '小黑',
-          price: 888,
-          pricetype: '拼图红包',
-          createtime: '10-18 10:22',
-          sex: '2',
-          countNum: 10,
-          getNum: 5,
-          type: 3
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickname: '小明',
-          price: 1000,
-          pricetype: '语音口令红包',
-          createtime: '10-17 12:22',
-          sex: '2',
-          countNum: 8,
-          getNum: 3,
-          type: 1
-        }
-      ]
+      packageData: [],
+      scrollTop: 100,
+      scrollStyles: '',
+      typeMap: {
+        1: '拼图红包',
+        2: '拼字红包',
+        3: '语音口令红包'
+      },
+      currentPage: 1,
+      totalPage: 1
     }
   },
-
   components: {
   },
-
   methods: {
+    initData () {
+      let this_ = this
+      let postParams = {
+        page: this.currentPage
+      }
+      // 调用应用实例的方法获取全局数据
+      this.request.post('/api/sendOutRecord/list', postParams).then(res => {
+        this_.totalPage = Math.ceil(res.data.total / res.data.limit)
+        if (this_.totalPage > 1) {
+          this_.currentPage = parseInt(res.data.page)
+        }
+        if (res.data.page > 1) {
+          this_.packageData = this_.packageData.concat(res.data.data)
+          console.log('length=>', this.packageData.length)
+          return
+        }
+        this_.packageData = res.data.data
+        console.log('length=>', this.packageData.length)
+      }).catch(err => {
+        console.log(err)
+      })
+    },
     redPackageDetail (detailInfo) {
       let type = detailInfo.type
       wx.navigateTo({
-        url: `/pages/red-package/detail/main?type=${type}`
+        url: `/pages/red-package/detail/main?type=${type}&id=${detailInfo.id}`
       })
     },
     showModal () {
       this.isShowModal = true
+    },
+    upper (e) {
+    },
+    lower (e) {
+      let this_ = this
+      if (!this_.currentPage || this_.currentPage === this_.totalPage) {
+        return
+      }
+      wx.hideToast()
+      if (this_.currentPage < this_.totalPage) {
+        this_.currentPage++
+        if (this_.currentPage > this_.totalPage) {
+          wx.showToast({
+            title: '没有更多数据',
+            icon: 'success',
+            duration: 2000
+          })
+          return
+        }
+      }
+      console.log('currentPage', this.currentPage)
+      this.initData()
+      console.log('low', e)
     }
   },
-  created () {
-    // 调用应用实例的方法获取全局数据
+  created () {},
+  onLoad () {
+    let this_ = this
+    let url = getCurrentPageUrlWithArgs()
+    checkAuthorize('index', this.initData, url)
+    wx.getSystemInfo({
+      success: function (res) {
+        // 可使用窗口宽度、高度
+        this_.scrollStyles = `height: ${res.windowHeight * 0.94}px`
+        // 计算主体部分高度,单位为px
+      }
+    })
+    console.log('我是首页加载测试')
   }
 }
 </script>

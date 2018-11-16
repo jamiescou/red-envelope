@@ -3,21 +3,23 @@
     <div class="modal_mask">
     </div>
     <div class="modal_content"
-      style="background: url('../../../../../static/images/packageout.png') no-repeat fixed center"
+      style="background: url('http://img.dhqcy.cn/hb/packageout.png') no-repeat fixed center"
       v-if="isShowModal">
       <div class="head_img">
         <img :src="packageInfo.headImg" alt="">
       </div>
-      <div class="modal_tips" v-if="packageInfo.hasPack">
+      <div class="modal_tips" v-if="result === 1">
+        <!-- 恭喜你答对了 -->
         <img class="_success" src="../../../../static/images/answe_right.png" alt="">
       </div>
-      <div class="modal_tips" v-if="!packageInfo.hasPack">
+      <div class="modal_tips" v-if="result === 2">
+        <!--恭喜你答对了 但手速慢了  -->
         <img class="_fail" src="../../../../static/images/find_out.png" alt="">
       </div>
-      <div class="open_package" v-if="false">
-        <img  @click="openPackage()" src="../../../../static/images/open_package.png" alt="">
+      <div class="open_package" v-if="result === 1">
+        <img  @click="openPackage()" src="http://img.dhqcy.cn/hb/open_package.png" alt="">
       </div>
-      <div class="check_pack_detail" @click="checkDetailPack()">
+      <div class="check_pack_detail" v-if="result === 2" @click="checkDetailPack()">
         查看领取详情 <span>></span>
       </div>
     </div>
@@ -29,15 +31,34 @@ export default {
   props: ['isShowModal', 'packageInfo'],
   data () {
     return {
+      result: 1
     }
   },
   methods: {
     openPackage () {
-      console.log('111')
+      let { sendOutRecordId, useTimes, type } = this.packageInfo
+      let postParams = {
+        memberId: 100132,
+        result: 1,
+        sendOutRecordId,
+        useTime: useTimes
+      }
+      // 点击开 抢红包
+      this.request.post('/api/receiveRecord/gainRedEnvelope', postParams).then(res => {
+        this.result = res.data.result
+        if (this.result === 1) {
+          wx.redirectTo({
+            url: `/pages/red-package/detail/main?type=${type}&id=${sendOutRecordId}`
+          })
+        }
+      }).catch(err => {
+        console.log(err)
+      })
     },
     checkDetailPack () {
-      wx.navigateTo({
-        url: ''
+      let {type, sendOutRecordId} = this.packageInfo // 区分是什么红包
+      wx.redirectTo({
+        url: `/pages/red-package/detail/main?type=${type}&id=${sendOutRecordId}`
       })
     }
   },

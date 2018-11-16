@@ -1,8 +1,96 @@
+import request from './flyPlugin'
+export function checkAuthorize (from, callback, curUrl) {
+  console.log('授权检测', curUrl)
+  // 检查是否授权 callback是授权并登陆后要执行的函数
+  wx.getSetting({
+    success (res) {
+      if (!res.authSetting['scope.userInfo'] && from === 'detail' && curUrl) {
+        console.log('url in 授权检测', curUrl)
+        wx.redirectTo({url: '../../authorize/main?url=' + encodeURIComponent(curUrl)})
+        return
+      }
+      if (!res.authSetting['scope.userInfo'] && from === 'index' && curUrl) {
+        wx.redirectTo({url: '../authorize/main?url=' + encodeURIComponent(curUrl)})
+        return
+      }
+      checkLoginApp(callback)
+    }
+  })
+}
+export function checkLoginApp (callback) {
+  console.log('登录检测')
+  wx.checkSession({
+    success (res) {
+      // session_key 未过期，并且在本生命周期一直有效
+      if (callback) {
+        console.log('登录中触发首页的回调')
+        callback()
+      }
+    },
+    // session_key 已经失效，需要重新执行登录流程
+    fail (err) {
+      console.log('session过期', err)
+      loginApp(callback) // 重新登录
+    }
+  })
+}
+export function loginApp (callback) {
+  console.log('准备登录')
+  // 登录
+  wx.showToast({
+    title: '登录中',
+    icon: 'loading',
+    duration: 2000
+  })
+  wx.login({
+    success (res) {
+      if (res.code) {
+        // 发起网络请求
+        request.post('/api/wechat/login', {jscode: res.code}).then(resKeyInfo => {
+          addMemberByUserInfo(resKeyInfo, callback)
+        })
+      } else {
+        console.log('登录失败！' + res.errMsg)
+      }
+    }
+  })
+}
+
 function formatNumber (n) {
   const str = n.toString()
   return str[1] ? str : `0${str}`
 }
-
+async function addMemberByUserInfo (resKeyInfo, callback) {
+  // 异步存储sessionKey和拿取userInfo
+  await setStorage('session_key', resKeyInfo.data.session_key)
+  let userInfo = await getStorage('userInfo')
+  let parmas = {
+    opendId: resKeyInfo.data.openid,
+    sessionKey: resKeyInfo.data.session_key,
+    nickname: userInfo.data.nickName,
+    city: userInfo.data.city,
+    province: userInfo.data.province,
+    sex: userInfo.data.gender,
+    headImg: userInfo.data.avatarUrl,
+    phone: ''
+  }
+  request.post('api/wechat/addMember', parmas).then(resMemberInfo => {
+    setStorage('shareNo', resMemberInfo.data.shareNo)
+    setStorage('memberId', resMemberInfo.data.id).then(res => {
+      callback()
+    })
+    // wx.setStorage({
+    //   key: 'memberId',
+    //   data: resMemberInfo.data.id,
+    //   success: function (res) {
+    //     if (callback) {
+    //       console.log('登录后触发首页的回调')
+    //       callback()
+    //     }
+    //   }
+    // })
+  })
+}
 export function formatTime (date) {
   const year = date.getFullYear()
   const month = date.getMonth() + 1
@@ -143,7 +231,7 @@ export function piecesImage (canvasId, imgSource, imagesInfo) {
   for (var i = 0; i < imagesPositionArr.length; i++) {
     ctx.drawImage(
       imgSource,
-      imagesPositionArr[i].imgPosition[0], // 坐标必须是数字 否则默认裁了全部
+      imagesPositionArr[i].imgPosition[0], // 坐标必须是数字 否则默认裁了全部 // 原图选框X坐标
       imagesPositionArr[i].imgPosition[1],
       pieceImgSize,
       pieceImgSize,
@@ -155,7 +243,20 @@ export function piecesImage (canvasId, imgSource, imagesInfo) {
   }
   ctx.draw(true)
 }
+export function setStorage (key, value) {
+  return new Promise((resolve, reject) => {
+    wx.setStorage({ key: key, data: value, success: resolve, fail: reject })
+  })
+}
+export function getStorage (key) {
+  return new Promise((resolve, reject) => {
+    wx.getStorage({ key: key, success: resolve, fail: reject })
+  })
+}
 export default {
+  checkAuthorize,
+  checkLoginApp,
+  loginApp,
   formatNumber,
   formatTime,
   getCurrentPageUrl,
@@ -163,5 +264,7 @@ export default {
   getInitPositionList,
   piecesImage,
   randIndex,
-  nomalIndex
+  nomalIndex,
+  setStorage,
+  getStorage
 }

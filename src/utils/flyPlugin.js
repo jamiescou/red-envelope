@@ -1,20 +1,17 @@
-// import Vue from 'vue'
+import {getStorage} from '../utils/index'
 var Fly = require('flyio/dist/npm/wx') // npm引入方式
-
 const request = new Fly()
-
 request.config.timeout = 10 * 1000
-request.config.baseURL = ''
-
-request.interceptors.request.use((request) => {
+// request.config.baseURL = 'http://192.168.1.85:8070'
+request.config.baseURL = 'https://hbbeta.dhchecheng.com'
+request.interceptors.request.use(async (request) => {
   wx.showLoading({ title: '拼命加载中...' })
   // 给所有请求添加自定义header
-  request.headers['token'] = 'token'
-  // 打印出请求体
+  let value = getStorage('session_key')
+  request.headers['session_key'] = value
   console.log(request.body)
   return request
 })
-
 request.interceptors.response.use(
   (response, promise) => {
     wx.hideLoading()
@@ -29,18 +26,4 @@ request.interceptors.response.use(
     return promise.resolve()
   }
 )
-
-const plugin = (Vue, opts) => {
-  if (!Vue.prototype.request) {
-    Vue.prototype.request = request
-  }
-  if (!Vue.prototype.$post) {
-    Vue.prototype.$post = request.post
-  }
-
-  if (!Vue.prototype.$get) {
-    Vue.prototype.$get = request.get
-  }
-}
-
-export default plugin
+export default request

@@ -28,6 +28,7 @@ export default {
       playStyleData: [
         {
           id: 1,
+          type: 2,
           name: 'text',
           title: '包你拼·拼字',
           desc: '手速大比拼，谁赢拿奖金',
@@ -35,6 +36,7 @@ export default {
         },
         {
           id: 2,
+          type: 1,
           name: 'picture',
           title: '包你拼·拼图',
           desc: '手速大比拼，谁赢拿奖金',
@@ -42,6 +44,7 @@ export default {
         },
         {
           id: 3,
+          type: 3,
           name: 'vioce',
           title: '开口红·语音口令',
           desc: '给个红包，我就开口',

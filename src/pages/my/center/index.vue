@@ -8,18 +8,17 @@
       </div>
       
       <div class="my_info_bottom">
-        <div class="my_record">
+        <div class="my_record" @click="myRecord()">
           <div class="_record_img">
-            <img src="../../../static/images/myrecord.png" alt="">
+            <img src="../../../../static/images/myrecord.png" alt="">
           </div>
           <div class="title_text">
             我的记录
           </div>
-          
         </div>
-        <div class="my_remain_balance">
+        <div class="my_remain_balance" @click="myBalance()">
           <div class="_balance">
-            8.88
+            {{balance}}
           </div>
           <div class="title_text">
             我的余额
@@ -28,7 +27,7 @@
         </div>
         <div class="contact_customer_service">
           <div class="_customer_img">
-            <img src="../../../static/images/customer.png" alt="">
+            <img src="../../../../static/images/customer.png" alt="">
           </div>
           <div class="title_text">
             联系客服
@@ -57,11 +56,31 @@ export default {
   },
   data () {
     return {
-      headImg: '../../static/images/test_img.png'
-
+      balance: '',
+      headImg: '../../../static/images/test_img.png'
+    }
+  },
+  methods: {
+    myRecord () {
+      wx.navigateTo({url: '../record/main'})
+    },
+    myBalance () {
+      wx.navigateTo({url: '../balance/main'})
     }
   },
   created () {
+  },
+  onLoad () {
+    let that = this
+    let postParams = {
+      memberId: 100132
+    }
+    // 调用应用实例的方法获取全局数据
+    this.request.post('/api/receiveRecord/sumMoney', postParams).then(res => {
+      that.balance = res.data
+    }).catch(err => {
+      console.log(err)
+    })
   }
 }
 </script>

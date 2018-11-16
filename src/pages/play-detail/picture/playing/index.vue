@@ -4,12 +4,12 @@
     <div class="count_times">
       {{timeSeconds}}s
     </div>
-    <div class="text_content" v-on:click="canvasClick">
+    <div class="text_content" v-if="!isShowModal">
       <canvas
         class="canvas_picture"
         :style='canvasStyles'
-        v-on:touchstart='touchStartImage'
-        v-on:touchmove="touchMoveImage"
+        disable-scroll=false
+        v-on:touchstart='canvasClick'
         canvas-id="playingPic">
       </canvas>
     </div>
@@ -28,30 +28,34 @@ export default {
     return {
       isShowModal: false,
       packageInfo: {
-        headImg: '../../../../static/images/test_img.png',
-        hasPack: false
+        // headImg: '../../../../static/images/test_img.png',
+        hasPack: false,
+        sendOutRecordId: '',
+        useTimes: ''
       },
       textContent: '',
       canvasStyles: `width: 315px`,
       timer: null,
-      gameTime: 30,
-      timeSeconds: 30,
+      gameTime: 120,
+      timeSeconds: 120,
       initPositions: {},
       imgOption: {},
       tempIndex: [],
-      typeNumber: 3
+      levelMap: {
+        1: 3,
+        2: 4,
+        3: 5
+      }
     }
   },
   methods: {
     initData () {
-      this.imgSource = '../../../../../static/images/night_img.jpg'
-      this.typeNumber = 3
-      this.imgOption = getBasicBlockInfo(this, this.typeNumber, 1300) // 获取切片的信息
+      console.log('init', this.levelMap, this.level)
+      this.imgOption = getBasicBlockInfo(this, this.levelMap[this.level], 500) // 获取切片的信息
       let imageInfos = getInitPositionList(this.imgOption, true)
       this.initPositions = imageInfos
       piecesImage('playingPic', this.imgSource, imageInfos)
       clearInterval(this.timer)
-      console.log('timer==init', this.timer)
       this.timer = setInterval(() => {
         this.timeSeconds--
         if (this.timeSeconds === 0) {
@@ -62,12 +66,12 @@ export default {
       }, 1000)
     },
     canvasClick (e) {
-      let curPageX = e.x - e.currentTarget.offsetLeft
-      let curPageY = e.y - e.currentTarget.offsetTop
+      let curPageX = e.x
+      let curPageY = e.y
       let {startX, breakSpace} = this.imgOption // 切片宽度等信息
       let {imagesPositionArr} = this.initPositions // 带canvas坐标
       let itemRangePos = []
-      let indexOriginList = nomalIndex(this.typeNumber)
+      let indexOriginList = nomalIndex(this.levelMap[this.level])
       for (var i = 0; i < imagesPositionArr.length; i++) {
         itemRangePos.push([imagesPositionArr[i].canvasPosition, [imagesPositionArr[i].canvasPosition[0] + startX + breakSpace, imagesPositionArr[i].canvasPosition[1] + startX + breakSpace]])
       }
@@ -98,9 +102,13 @@ export default {
         for (var n = 0; n < imagesPositionArr.length; n++) {
           tempIndexList.push(imagesPositionArr[n].imgPosition[2].imgIndex)
         }
+        console.log('当前索引', tempIndexList, '原始索引', indexOriginList)
         if (tempIndexList.toString() === indexOriginList.toString()) {
-          console.log('恭喜你拼好了')
           clearInterval(this.timer)
+          this.packageInfo.hasPack = true
+          this.packageInfo.type = 1
+          this.packageInfo.sendOutRecordId = this.id
+          this.packageInfo.useTimes = this.gameTime - this.timeSeconds
           this.isShowModal = true
           console.log('okay,匹配成功 用时', this.gameTime - this.timeSeconds)
         }
@@ -112,7 +120,12 @@ export default {
   },
   onLoad () {
     clearInterval(this.timer)
-    this.timeSeconds = 30
+    // this.imgSource = '../../../../../static/images/001809191413098212.jpg'
+    this.imgSource = this.$root.$mp.query.content
+    this.id = this.$root.$mp.query.id
+    this.gameTime = this.$root.$mp.query.gameTime
+    this.level = this.$root.$mp.query.level ? 1 : 2
+    this.timeSeconds = this.$root.$mp.query.gameTime
     this.initData()
   },
   onUnload () {
@@ -141,12 +154,17 @@ export default {
   text-align: center;
 }
 .canvas_picture{
+  position: relative;
+  z-index: -1;
   /* margin: 2% 6.7%; */
   /* text-align: center; */
   /* margin: 22rpx auto; */
 }
 .text_content{
   position: relative;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling : touch;
+  z-index: 88;
   height: 60%;
   margin:35px 25px;
   font-size:36rpx;
