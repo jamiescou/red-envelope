@@ -20,23 +20,17 @@
      </div>
      <div class="edit_item">
        <div class="item_title">红包金额</div>
-      <div class="item_input"><input placeholder-class="place-holder" placeholder="填写金额" /></div>
+      <div class="item_input"><input placeholder-class="place-holder" @change="fieldMoney" placeholder="填写金额" /></div>
       <div class="next_step">元</div>
     </div>
     <div class="edit_item">
        <div class="item_title">红包数量</div>
-      <div class="item_input"><input placeholder-class="place-holder" placeholder="填写数量" /></div>
+      <div class="item_input"><input placeholder-class="place-holder" @change="fieldNumber" placeholder="填写数量" /></div>
       <div class="next_step">个</div>
     </div>
-    <div class="edit_item">
-       <div class="item_title">挑战时间</div>
-      <div class="item_input">
-        <picker @change="pickerTimeChange" :value="timeIndex" :range="timeArray">
-          <div class="picker_level">
-            {{timeArray[timeIndex]}}
-          </div>
-        </picker>
-      </div>
+    <div class="edit_item" @click="pickerTimeData()">
+      <div class="item_title">挑战时间</div>
+      <div class="item_input"><input :value='timeSeconds' placeholder-class="place-holder" disabled placeholder="选择时间" /></div>
       <div class="next_step_choose">></div>
     </div>
     <div class="edit_item">
@@ -61,24 +55,34 @@
    <div class="save_as_package" @click="makePicPackage()">
      生成拼图红包
    </div>
+   <pickerTime :isShowTimeModal='isShowTimeModal' @setTimeCallBack="setTimeCallBack"></pickerTime>
   </div>
 </template>
 
 <script>
-
+import pickerTime from '../../../components/modal/pick-time/index'
 export default {
   components: {
+    pickerTime
   },
 
   data () {
     return {
       levelArray: ['3 X 3', '4 X 4', '5 X 5'],
       levelIndex: 0,
-      timeArray: ['15s', '30s', '60s', '自定义'],
+      levelMap: {
+        0: 1,
+        1: 2,
+        2: 3
+      },
+      timeSeconds: '',
       timeIndex: 0,
+      isShowTimeModal: false,
+      money: '',
+      num: '',
       headImg: '../../../static/images/test_img.png',
-      picData: '../../../static/images/test_img.png',
-      isPublish: false
+      picData: '',
+      isPublish: 1
     }
   },
   methods: {
@@ -88,18 +92,95 @@ export default {
         url: `/pages/material/main?id=${parmas}&type=pic`
       })
     },
-    switchChange (value) {
-      this.isPublish = value.mp.detail.value // 是否发布到广场
+    switchChange (val) {
+      // 是否发布到广场
+      let publishVal = val.target.value
+      if (publishVal) {
+        this.isPublish = 1
+        return
+      }
+      this.isPublish = 2
     },
     pickerLevelChange (val) {
       this.levelIndex = val.target.value
+    },
+    pickerTimeData () {
+      this.isShowTimeModal = true
+    },
+    setTimeCallBack (val, status) {
+      this.timeSeconds = val + 's'
+      this.isShowTimeModal = false
+    },
+    fieldMoney (e) {
+      this.money = e.target.value
+    },
+    fieldNumber (e) {
+      this.num = e.target.value
     },
     pickerTimeChange (val) {
       this.timeIndex = val.target.value
     },
     makePicPackage () {
-      wx.navigateTo({
-        url: `/pages/red-package/detail/main?type=3`
+      let {money, num, contentId, timeSeconds, isPublish} = this
+      if (!money || !num || !contentId || !timeSeconds || !isPublish) {
+        wx.showToast({
+          title: '请输入红包参数',
+          icon: 'none'
+        })
+        return
+      }
+      // 生成拼图红包
+      let postParams = {
+        memberId: 100132,
+        type: 1, // 1-拼图 2-拼字 3-语音
+        contentId, // '素材id'
+        money, // 红包
+        num, // 红包个数
+        timeRange: parseInt(timeSeconds), // 挑战时间
+        bonusMoney: money * 0.02, // 手续费（按2%收取）
+        publish: isPublish, // 1-发布 2-不发布
+        level: this.levelMap[this.levelIndex] // 难度 1， 2， 3
+      }
+      console.log('postParams', postParams)
+      // 调用应用实例的方法获取全局数据
+      this.request.post('/api/sendOutRecord/commit', postParams).then(res => {
+        let payType = res.data.payType
+        let id = res.data.id
+        let param = {
+          id,
+          memberId: 100132
+        }
+        if (payType === 1) {
+          // 余额支付
+          this.request.get('/api/sendOutRecord/payByBalance', param).then(res => {
+            wx.navigateTo({
+              url: `/pages/red-package/detail/main?type=1&id=${id}`
+            })
+          }).catch(err => {
+            console.log(err)
+          })
+          return false
+        }
+        wx.requestPayment(
+          // 微信支付
+          {
+            timeStamp: '',
+            nonceStr: '',
+            package: '',
+            signType: 'MD5',
+            paySign: '',
+            success: function (res) {
+
+            },
+            fail: function (res) {
+
+            },
+            complete: function (res) {
+
+            }
+          })
+      }).catch(err => {
+        console.log(err)
       })
     }
   },
@@ -111,6 +192,7 @@ export default {
     let curPage = pages[pages.length - 1] // 素材库选择的内容
     if (curPage.data.data) {
       this.picData = curPage.data.data
+      this.contentId = curPage.data.contentId
     }
   }
 }

@@ -4,7 +4,7 @@
     "pages/level/main",
     "pages/launch/main",
     "pages/more/main",
-    "pages/my/main",
+    "pages/my/center/main",
     "pages/material/main",
     "pages/play-types/text/main",
     "pages/play-types/picture/main",
@@ -14,12 +14,16 @@
     "pages/play-detail/text/playing/main",
     "pages/play-detail/picture/playing/main",
     "pages/play-detail/fail/main",
-    "pages/red-package/detail/main"
+    "pages/red-package/detail/main",
+    "pages/my/record/main",
+    "pages/my/balance/main",
+    "pages/my/balance-detail/main",
+    "pages/authorize/main"
   ],
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#FF4347",
-    "navigationBarTitleText": "包你说",
+    "navigationBarTitleText": "好运包",
     "navigationBarTextStyle": "light",
     "navigationStyle":"default"
   },
@@ -54,7 +58,7 @@
         "selectedIconPath": "static/images/red_more.png"
       },
       {
-        "pagePath": "pages/my/main",
+        "pagePath": "pages/my/center/main",
         "text": "我的",
         "iconPath": "static/images/my.png",
         "selectedIconPath": "static/images/red_my.png"

@@ -24,8 +24,14 @@ export default {
 
   data () {
     return {
-      textContent: '../../../../../static/images/night_img.png',
-      gameTime: 30,
+      imgSource: '',
+      gameTime: '',
+      level: '',
+      levelMap: {
+        1: 3,
+        2: 4,
+        3: 5
+      },
       canvasStyles: `width: 315px`,
       windowHeight: 603, // 默认iphone 6 尺寸
       windowWidth: 375 // 默认iphone 6 尺寸
@@ -33,15 +39,18 @@ export default {
   },
   methods: {
     startGames () {
-      const url = `../../../play-detail/picture/playing/main?content=${this.textContent}`
+      const url = `../../../play-detail/picture/playing/main?content=${this.imgSource}&id=${this.id}&gameTime=${this.gameTime}&level=${this.level}`
       wx.redirectTo({url})
     }
   },
   created () {
   },
   onLoad () {
-    this.imgSource = '../../../../../static/images/night_img.jpg'
-    let imgOption = getBasicBlockInfo(this, 3, 1300)
+    this.imgSource = this.$root.$mp.query.content
+    this.id = this.$root.$mp.query.id
+    this.gameTime = this.$root.$mp.query.gameTime
+    this.level = this.$root.$mp.query.level ? 1 : 2
+    let imgOption = getBasicBlockInfo(this, this.levelMap[this.level], 500)
     let imageInfos = getInitPositionList(imgOption)
     piecesImage('startPic', this.imgSource, imageInfos)
   }

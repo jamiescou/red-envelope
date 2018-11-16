@@ -61,8 +61,11 @@ export default {
       if (this.selectedIndex.length === this.textList.length) {
         if (resultData === this.textContent) {
           clearInterval(this.timer)
+          this.packageInfo.hasPack = true
+          this.packageInfo.type = 2
+          this.packageInfo.sendOutRecordId = this.id
+          this.packageInfo.useTimes = this.gameTime - this.timeSeconds
           this.isShowModal = true
-          console.log('okay,匹配成功 用时', this.gameTime - this.timeSeconds)
         } else {
           this.initData()
         }
@@ -88,7 +91,7 @@ export default {
         if (this.timeSeconds === 0) {
           // this.timeSeconds = 30
           clearInterval(this.timer)
-          const url = `../../../play-detail/fail/main?type=2`
+          const url = `../../../play-detail/fail/main?type=2&id=${this.id}`
           wx.redirectTo({url})
         }
       }, 1000)
@@ -100,11 +103,14 @@ export default {
     this.tempTextList = []
     this.timeSeconds = 30
     this.textContent = this.$root.$mp.query.content
+    this.id = this.$root.$mp.query.id // 红包id
+    this.gameTime = this.$root.$mp.query.gameTime // 红包id
+    this.timeSeconds = this.$root.$mp.query.gameTime
     this.tempTextList = this.textContent.split('')
     this.tempTextList.sort(() => (0.5 - Math.random()))
     this.initData()
     if (this.timeSeconds === 0) {
-      const url = `../../../play-detail/fail/main?type=2`
+      const url = `../../../play-detail/fail/main?type=2&id=${this.id}`
       wx.redirectTo({url})
     }
   },

@@ -1,27 +1,27 @@
 <template>
   <div class="level_range_box">
     <div class="two_btn_level">
-      <div class="level_btn_common level_border_left" :class="levelType === 0 ? 'challenge_level' : 'money_level'" @click="changeLevelType(1)">挑战榜</div>
-      <div class="level_btn_common level_border_right" :class="levelType === 1 ? 'challenge_level' : 'money_level'" @click="changeLevelType(0)">金额榜</div>
+      <div class="level_btn_common level_border_left" :class="levelType === 1 ? 'challenge_level' : 'money_level'" @click="changeLevelType(2)">挑战榜</div>
+      <div class="level_btn_common level_border_right" :class="levelType === 2 ? 'challenge_level' : 'money_level'" @click="changeLevelType(1)">金额榜</div>
     </div>
     <div class="level_stage">
       <div class="second_level">
         <div class="second_icon"><img :src="topThree[1] && topThree[1].headImg" alt=""></div>
-        <div class="second_name three_level_common">{{topThree[1] && topThree[1].nickName}}</div>
-        <div v-if="levelType === 0" class="second_money three_level_common">¥{{topThree[1] && topThree[1].balance}}</div>
-        <div v-if="levelType === 1" class="second_money three_level_common">{{topThree[1] && topThree[1].moreTimes}}次</div>
+        <div class="second_name three_level_common">{{topThree[1] && topThree[1].nickname}}</div>
+        <div v-if="levelType === 1" class="second_money three_level_common">¥{{topThree[1] && topThree[1].sumMoney}}</div>
+        <div v-if="levelType === 2" class="second_money three_level_common">{{topThree[1] && topThree[1].count}}次</div>
       </div>
       <div class="frist_level">
         <div class="frist_icon"><img :src="topThree[0] && topThree[0].headImg" alt=""></div>
-        <div class="frist_name three_level_common">{{topThree[0] && topThree[0].nickName}}</div>
-        <div v-if="levelType === 0" class="frist_money three_level_common">¥{{topThree[0] && topThree[0].balance}}</div>
-        <div v-if="levelType === 1" class="frist_money three_level_common">{{topThree[0] && topThree[0].moreTimes}}次</div>
+        <div class="frist_name three_level_common">{{topThree[0] && topThree[0].nickname}}</div>
+        <div v-if="levelType === 1" class="frist_money three_level_common">¥{{topThree[0] && topThree[0].sumMoney}}</div>
+        <div v-if="levelType === 2" class="frist_money three_level_common">{{topThree[0] && topThree[0].count}}次</div>
       </div>
       <div class="thrid_level">
         <div class="thrid_icon"><img :src="topThree[2] && topThree[2].headImg" alt=""></div>
-        <div class="thrid_name three_level_common">{{topThree[2] && topThree[2].nickName}}</div>
-        <div v-if="levelType === 0" class="thrid_money three_level_common">¥{{topThree[2] && topThree[2].balance}}</div>
-        <div v-if="levelType === 1" class="thrid_money three_level_common">{{topThree[2] && topThree[2].moreTimes}}次</div>
+        <div class="thrid_name three_level_common">{{topThree[2] && topThree[2].nickname}}</div>
+        <div v-if="levelType === 1" class="thrid_money three_level_common">¥{{topThree[2] && topThree[2].sumMoney}}</div>
+        <div v-if="levelType === 2" class="thrid_money three_level_common">{{topThree[2] && topThree[2].count}}次</div>
       </div>
     </div>
     <div class="level_list">
@@ -33,13 +33,13 @@
           <img :src="item.headImg" alt="">
         </div>
         <div class="item_nickname">
-          {{item.nickName}}
-        </div>
-        <div v-if="levelType === 0" class="item_balance">
-          ￥ {{item.balance}}
+          {{item.nickname}}
         </div>
         <div v-if="levelType === 1" class="item_balance">
-          {{item.moreTimes}}次
+          ￥ {{item.sumMoney}}
+        </div>
+        <div v-if="levelType === 2" class="item_balance">
+          {{item.count}}次
         </div>
       </div>
     </div>
@@ -56,111 +56,39 @@ export default {
     return {
       headImg: '../../static/images/test_img.png',
       topThree: [],
-      levelType: 1,
-      levelList: [
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '时代大厦',
-          balance: 888,
-          moreTimes: 100
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '似懂非懂',
-          balance: 777,
-          moreTimes: 99
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '复古风格',
-          balance: 666,
-          moreTimes: 88
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '放的地方11111',
-          balance: 88,
-          moreTimes: 55
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '电放费',
-          balance: 99.88,
-          moreTimes: 55
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '似懂非懂',
-          balance: 44,
-          moreTimes: 55
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '复古风格',
-          balance: 66,
-          moreTimes: 55
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '放的地方',
-          balance: 88,
-          moreTimes: 55
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '电放费',
-          balance: 99.88,
-          moreTimes: 55
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '放的地方11111',
-          balance: 88,
-          moreTimes: 55
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '电放费',
-          balance: 99.88,
-          moreTimes: 55
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '似懂非懂',
-          balance: 44,
-          moreTimes: 55
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '复古风格',
-          balance: 66,
-          moreTimes: 55
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '放的地方',
-          balance: 88,
-          moreTimes: 55
-        },
-        {
-          headImg: '../../static/images/test_img.png',
-          nickName: '电放费',
-          balance: 99.88,
-          moreTimes: 55
-        }
-      ]
+      levelType: 2,
+      levelList: []
     }
   },
   methods: {
     changeLevelType (type) {
       this.levelType = type
+      this.getRangeData(type)
+    },
+    getRangeData (type) {
+      let that = this
+      let postParams = {
+        page: 1,
+        limit: 4,
+        memberId: 100132,
+        type: type
+      }
+      // 调用应用实例的方法获取全局数据
+      this.request.post('/api/receiveRecord/rankingList', postParams).then(res => {
+        this.topThree = res.data.length > 2 && res.data.splice(0, 3)
+        that.levelList = res.data
+      }).catch(err => {
+        console.log(err)
+      })
     }
+  },
+  onLoad () {
+    let initType = 2
+    this.getRangeData(initType)
   },
   created () {
   },
   mounted () {
-    this.topThree = this.levelList.splice(0, 3)
-    console.log('mounte', this.topThree)
   }
 }
 </script>

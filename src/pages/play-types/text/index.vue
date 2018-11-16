@@ -14,23 +14,17 @@
      </div>
      <div class="edit_item">
        <div class="item_title">红包金额</div>
-      <div class="item_input"><input placeholder-class="place-holder" placeholder="填写金额" /></div>
+      <div class="item_input"><input placeholder-class="place-holder" @change="fieldMoney" placeholder="填写金额" /></div>
       <div class="next_step">元</div>
     </div>
     <div class="edit_item">
        <div class="item_title">红包数量</div>
-      <div class="item_input"><input placeholder-class="place-holder" placeholder="填写数量" /></div>
+      <div class="item_input"><input placeholder-class="place-holder" @change="fieldNumber" placeholder="填写数量" /></div>
       <div class="next_step">个</div>
     </div>
-    <div class="edit_item">
-       <div class="item_title">挑战时间</div>
-      <div class="item_input">
-        <picker @change="pickerTimeChange" :value="timeIndex" :range="timeArray">
-          <div class="picker_level">
-            {{timeArray[timeIndex]}}
-          </div>
-        </picker>
-      </div>
+    <div class="edit_item" @click="pickerTimeData()">
+      <div class="item_title">挑战时间</div>
+      <div class="item_input"><input :value='timeSeconds' placeholder-class="place-holder" disabled placeholder="选择时间" /></div>
       <div class="next_step_choose">></div>
     </div>
     <div class="edit_item">
@@ -44,20 +38,23 @@
    <div class="save_as_package" @click="makeTextPackage()">
      生成拼字红包
    </div>
+   <pickerTime :isShowTimeModal='isShowTimeModal' @setTimeCallBack="setTimeCallBack"></pickerTime>
   </div>
 </template>
 
 <script>
-
+import pickerTime from '../../../components/modal/pick-time/index'
 export default {
   components: {
+    pickerTime
   },
 
   data () {
     return {
       textData: '',
-      isPublish: false,
-      timeArray: ['15s', '30s', '60s', '自定义'],
+      timeSeconds: '',
+      isShowTimeModal: false,
+      isPublish: 1,
       timeIndex: 0,
       headImg: '../../../static/images/test_img.png',
       chooseData: '../../../static/images/test_play.png'
@@ -71,14 +68,90 @@ export default {
       })
     },
     switchChange (val) {
-      this.isPublish = val.mp.detail.value // 是否发布到广场
+      // 是否发布到广场
+      let publishVal = val.target.value
+      if (publishVal) {
+        this.isPublish = 1
+        return
+      }
+      this.isPublish = 2
     },
     pickerTimeChange (val) {
       this.timeIndex = val.target.value
     },
+    setTimeCallBack (val, status) {
+      this.timeSeconds = val + 's'
+      this.isShowTimeModal = false
+    },
+    pickerTimeData () {
+      this.isShowTimeModal = true
+    },
+    fieldMoney (e) {
+      this.money = e.target.value
+    },
+    fieldNumber (e) {
+      this.num = e.target.value
+    },
     makeTextPackage () {
-      wx.navigateTo({
-        url: `/pages/red-package/detail/main?type=2`
+      let {money, num, contentId, timeSeconds, isPublish} = this
+      if (!money || !num || !contentId || !timeSeconds || !isPublish) {
+        wx.showToast({
+          title: '请输入红包参数',
+          icon: 'none'
+        })
+      }
+      // 生成拼字红包
+      // let that = this
+      let postParams = {
+        memberId: 100132,
+        type: 2, // 1-拼图 2-拼字 3-语音
+        contentId, // '素材id'
+        money, // 红包
+        num, // 红包个数
+        timeRange: parseInt(timeSeconds), // 挑战时间
+        bonusMoney: money * 0.02, // 手续费（按2%收取）
+        publish: isPublish // 1-发布 2-不发布
+        // level: 1 // 难度 1， 2， 3
+      }
+      // 调用应用实例的方法获取全局数据
+      this.request.post('/api/sendOutRecord/commit', postParams).then(res => {
+        let payType = res.data.payType
+        let id = res.data.id
+        let param = {
+          id,
+          memberId: 100132
+        }
+        if (payType === 1) {
+          // 余额支付
+          this.request.get('/api/sendOutRecord/payByBalance', param).then(res => {
+            wx.navigateTo({
+              url: `/pages/red-package/detail/main?type=2&id=${id}`
+            })
+          }).catch(err => {
+            console.log(err)
+          })
+          return false
+        }
+        wx.requestPayment(
+          // 微信支付
+          {
+            timeStamp: '',
+            nonceStr: '',
+            package: '',
+            signType: 'MD5',
+            paySign: '',
+            success: function (res) {
+
+            },
+            fail: function (res) {
+
+            },
+            complete: function (res) {
+
+            }
+          })
+      }).catch(err => {
+        console.log(err)
       })
     }
   },
@@ -89,6 +162,7 @@ export default {
     let pages = getCurrentPages()
     let curPage = pages[pages.length - 1] // 素材库选择的内容
     this.textData = curPage.data.data
+    this.contentId = curPage.data.contentId
   }
 }
 </script>

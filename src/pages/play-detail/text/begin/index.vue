@@ -30,7 +30,7 @@ export default {
   },
   methods: {
     startGames () {
-      const url = `../../../play-detail/text/playing/main?content=${this.textContent}`
+      const url = `../../../play-detail/text/playing/main?content=${this.textContent}&id=${this.id}&gameTime=${this.gameTime}`
       wx.redirectTo({url})
     }
   },
@@ -38,6 +38,8 @@ export default {
   },
   onLoad () {
     this.textContent = this.$root.$mp.query.content
+    this.id = this.$root.$mp.query.id
+    this.gameTime = this.$root.$mp.query.gameTime
   }
 }
 </script>

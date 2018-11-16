@@ -10,8 +10,9 @@
 	},
 	"miniprogramRoot": "dist/",
 	"compileType": "miniprogram",
-	"appid": "wx341c7088bfea3c45",
+	"appid": "wx53b896fa7e476a07",
 	"projectname": "red-envelope",
+	"libVersion": "2.4.0",
 	"condition": {
 		"search": {
 			"current": -1,

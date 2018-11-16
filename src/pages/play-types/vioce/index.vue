@@ -23,12 +23,12 @@
      </div>
      <div class="edit_item">
        <div class="item_title">红包金额</div>
-      <div class="item_input"><input placeholder-class="place-holder" placeholder="填写金额" /></div>
+      <div class="item_input"><input placeholder-class="place-holder" @change="fieldMoney" placeholder="填写金额" /></div>
       <div class="next_step">元</div>
     </div>
     <div class="edit_item">
        <div class="item_title">红包数量</div>
-      <div class="item_input"><input placeholder-class="place-holder" placeholder="填写数量" /></div>
+      <div class="item_input"><input placeholder-class="place-holder"  @change="fieldNumber" placeholder="填写数量" /></div>
       <div class="next_step">个</div>
     </div>
     <div class="edit_item">
@@ -57,7 +57,7 @@ export default {
       chooseData: '../../../static/images/test_play.png',
       type: 1, // 1普通话 2英语 3 粤语
       vioceData: '',
-      isPublish: false,
+      isPublish: 1,
       languges: [
         {
           type: 1,
@@ -93,17 +93,83 @@ export default {
       this.languges = tempArr
     },
     chooseMaterialData () {
-      let parmas = this.type
+      let parmas = this.type // 语言类型
       wx.navigateTo({
         url: `/pages/material/main?id=${parmas}&type=vioce`
       })
     },
-    switchChange (value) {
-      this.isPublish = value.mp.detail.value // 是否发布到广场
+    switchChange (val) {
+      // 是否发布到广场
+      let publishVal = val.target.value
+      if (publishVal) {
+        this.isPublish = 1
+        return
+      }
+      this.isPublish = 2
+    },
+    fieldMoney (e) {
+      this.money = e.target.value
+    },
+    fieldNumber (e) {
+      this.num = e.target.value
     },
     makeViocePackage () {
-      wx.navigateTo({
-        url: `/pages/red-package/detail/main?type=1`
+      let {money, num, contentId, isPublish} = this
+      if (!money || !num || !contentId || !isPublish) {
+        wx.showToast({
+          title: '请输入红包参数',
+          icon: 'none'
+        })
+      }
+      // 生成开口红包
+      // let that = this
+      let memberId = wx.getStorageSync('memberId')
+      let postParams = {
+        memberId,
+        type: 3, // 1-拼图 2-拼字 3-语音
+        contentId, // '素材id'
+        money, // 红包
+        num, // 红包个数
+        bonusMoney: money * 0.02, // 手续费（按2%收取）
+        publish: isPublish // 1-发布 2-不发布
+      }
+      // 下单
+      this.request.post('/api/sendOutRecord/commit', postParams).then(res => {
+        let payType = res.data.payType
+        let id = res.data.id
+        let param = {
+          id,
+          memberId
+        }
+        if (payType === 1) {
+          // 余额支付
+          this.request.get('/api/sendOutRecord/payByBalance', param).then(res => {
+            wx.navigateTo({
+              url: `/pages/red-package/detail/main?type=3&id=${id}`
+            })
+          }).catch(err => {
+            console.log(err)
+          })
+          return false
+        }
+        wx.requestPayment(
+          // 微信支付
+          {
+            timeStamp: '',
+            nonceStr: '',
+            package: '',
+            signType: 'MD5',
+            paySign: '',
+            success: function (res) {
+            },
+            fail: function (res) {
+            },
+            complete: function (res) {
+            }
+          }
+        )
+      }).catch(err => {
+        console.log(err)
       })
     }
   },
@@ -114,6 +180,7 @@ export default {
     let pages = getCurrentPages()
     let curPage = pages[pages.length - 1] // 素材库选择的内容
     this.vioceData = curPage.data.data
+    this.contentId = curPage.data.contentId
   }
 }
 </script>
