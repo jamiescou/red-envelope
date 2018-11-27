@@ -8,7 +8,7 @@
       {{gameTime}}<span>s</span>
     </div>
     <div class="game_tips">
-      请根据以上文字顺序拼出文字顺序抢红包哦稍后文字顺序将会打乱
+      请根据以上图片拼出图片抢红包哦<br/>稍后图片顺序将会打乱
     </div>
     <div class="start_games" @click="startGames()">
       立即开始
@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import { getBasicBlockInfo, getInitPositionList, piecesImage } from '../../../../utils/index'
+import { getBasicBlockInfo, getInitPositionList, piecesImage, getImageInfo } from '../../../../utils/index'
 export default {
   components: {
   },
@@ -45,14 +45,16 @@ export default {
   },
   created () {
   },
-  onLoad () {
+  async onLoad () {
     this.imgSource = this.$root.$mp.query.content
+    let loadImgSrc = await getImageInfo(this.imgSource) // 下载图片到本地
     this.id = this.$root.$mp.query.id
     this.gameTime = this.$root.$mp.query.gameTime
-    this.level = this.$root.$mp.query.level ? 1 : 2
-    let imgOption = getBasicBlockInfo(this, this.levelMap[this.level], 500)
+    this.level = this.$root.$mp.query.level
+    let imgOption = getBasicBlockInfo(this, this.levelMap[this.level], loadImgSrc.height)
     let imageInfos = getInitPositionList(imgOption)
-    piecesImage('startPic', this.imgSource, imageInfos)
+    console.log('loadImgSrc', loadImgSrc)
+    piecesImage('startPic', loadImgSrc.path, imageInfos)
   }
 }
 </script>

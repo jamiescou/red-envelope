@@ -14,12 +14,12 @@
      </div>
      <div class="edit_item">
        <div class="item_title">红包金额</div>
-      <div class="item_input"><input placeholder-class="place-holder" @change="fieldMoney" placeholder="填写金额" /></div>
+      <div class="item_input"><input placeholder-class="place-holder" type='number' @change="fieldMoney" placeholder="填写金额" /></div>
       <div class="next_step">元</div>
     </div>
     <div class="edit_item">
        <div class="item_title">红包数量</div>
-      <div class="item_input"><input placeholder-class="place-holder" @change="fieldNumber" placeholder="填写数量" /></div>
+      <div class="item_input"><input placeholder-class="place-holder" type='number' @change="fieldNumber" placeholder="填写数量" /></div>
       <div class="next_step">个</div>
     </div>
     <div class="edit_item" @click="pickerTimeData()">
@@ -32,7 +32,7 @@
       <div class="item_publish"><switch checked @change="switchChange"/></div>
     </div>
     <div class="fee_info">
-      需支付¥0.00元服务费，优先使用余额¥8.06元。
+      需支付¥{{money * 0.02}}元服务费，优先使用余额¥{{balance}}元。
     </div>
    </div>
    <div class="save_as_package" @click="makeTextPackage()">
@@ -56,6 +56,9 @@ export default {
       isShowTimeModal: false,
       isPublish: 1,
       timeIndex: 0,
+      money: 0,
+      needFee: 0,
+      balance: 0,
       headImg: '../../../static/images/test_img.png',
       chooseData: '../../../static/images/test_play.png'
     }
@@ -88,6 +91,7 @@ export default {
     },
     fieldMoney (e) {
       this.money = e.target.value
+      this.needFee = e.target.value * 0.02
     },
     fieldNumber (e) {
       this.num = e.target.value
@@ -103,7 +107,7 @@ export default {
       // 生成拼字红包
       // let that = this
       let postParams = {
-        memberId: 100132,
+        memberId: this.memberId,
         type: 2, // 1-拼图 2-拼字 3-语音
         contentId, // '素材id'
         money, // 红包
@@ -119,29 +123,43 @@ export default {
         let id = res.data.id
         let param = {
           id,
-          memberId: 100132
+          memberId: this.memberId
         }
         if (payType === 1) {
           // 余额支付
           this.request.get('/api/sendOutRecord/payByBalance', param).then(res => {
-            wx.navigateTo({
-              url: `/pages/red-package/detail/main?type=2&id=${id}`
-            })
+            if (res.code === '200') {
+              wx.navigateTo({
+                url: `/pages/red-package/detail/main?type=2&id=${id}`
+              })
+            }
           }).catch(err => {
             console.log(err)
           })
           return false
         }
+        let jsonobject = res.data.jsonobject
+        let {timeStamp, nonceStr, packageStr, paySign} = jsonobject
         wx.requestPayment(
           // 微信支付
           {
-            timeStamp: '',
-            nonceStr: '',
-            package: '',
+            timeStamp,
+            nonceStr,
+            package: packageStr,
             signType: 'MD5',
-            paySign: '',
+            paySign,
             success: function (res) {
-
+              if (res.errMsg === 'requestPayment:ok') {
+                wx.navigateTo({
+                  url: `/pages/red-package/detail/main?type=2&id=${id}`
+                })
+              } else {
+                wx.showToast({
+                  title: '支付失败，请重新支付',
+                  icon: 'none',
+                  duration: 2000
+                })
+              }
             },
             fail: function (res) {
 
@@ -163,6 +181,30 @@ export default {
     let curPage = pages[pages.length - 1] // 素材库选择的内容
     this.textData = curPage.data.data
     this.contentId = curPage.data.contentId
+    this.memberId = wx.getStorageSync('memberId')
+    let that = this
+    let postParams = {
+      memberId: this.memberId
+    }
+    // 获取余额
+    this.request.get('/api/sys/config/memberInfo', postParams).then(res => {
+      that.balance = res.data.money
+      that.headImg = res.data.headImg
+    }).catch(err => {
+      console.log(err)
+    })
+  },
+  onUnload () {
+    this.textData = ''
+    this.timeSeconds = ''
+    this.isShowTimeModal = false
+    this.isPublish = 1
+    this.timeIndex = 0
+    this.money = 0
+    this.needFee = 0
+    this.balance = 0
+    this.headImg = '../../../static/images/test_img.png'
+    this.chooseData = '../../../static/images/test_play.png'
   }
 }
 </script>

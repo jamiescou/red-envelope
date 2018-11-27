@@ -1,110 +1,3 @@
-import request from './flyPlugin'
-export function checkAuthorize (from, callback, curUrl) {
-  console.log('授权检测', curUrl)
-  // 检查是否授权 callback是授权并登陆后要执行的函数
-  wx.getSetting({
-    success (res) {
-      if (!res.authSetting['scope.userInfo'] && from === 'detail' && curUrl) {
-        console.log('url in 授权检测', curUrl)
-        wx.redirectTo({url: '../../authorize/main?url=' + encodeURIComponent(curUrl)})
-        return
-      }
-      if (!res.authSetting['scope.userInfo'] && from === 'index' && curUrl) {
-        wx.redirectTo({url: '../authorize/main?url=' + encodeURIComponent(curUrl)})
-        return
-      }
-      checkLoginApp(callback)
-    }
-  })
-}
-export function checkLoginApp (callback) {
-  console.log('登录检测')
-  wx.checkSession({
-    success (res) {
-      // session_key 未过期，并且在本生命周期一直有效
-      if (callback) {
-        console.log('登录中触发首页的回调')
-        callback()
-      }
-    },
-    // session_key 已经失效，需要重新执行登录流程
-    fail (err) {
-      console.log('session过期', err)
-      loginApp(callback) // 重新登录
-    }
-  })
-}
-export function loginApp (callback) {
-  console.log('准备登录')
-  // 登录
-  wx.showToast({
-    title: '登录中',
-    icon: 'loading',
-    duration: 2000
-  })
-  wx.login({
-    success (res) {
-      if (res.code) {
-        // 发起网络请求
-        request.post('/api/wechat/login', {jscode: res.code}).then(resKeyInfo => {
-          addMemberByUserInfo(resKeyInfo, callback)
-        })
-      } else {
-        console.log('登录失败！' + res.errMsg)
-      }
-    }
-  })
-}
-
-function formatNumber (n) {
-  const str = n.toString()
-  return str[1] ? str : `0${str}`
-}
-async function addMemberByUserInfo (resKeyInfo, callback) {
-  // 异步存储sessionKey和拿取userInfo
-  await setStorage('session_key', resKeyInfo.data.session_key)
-  let userInfo = await getStorage('userInfo')
-  let parmas = {
-    opendId: resKeyInfo.data.openid,
-    sessionKey: resKeyInfo.data.session_key,
-    nickname: userInfo.data.nickName,
-    city: userInfo.data.city,
-    province: userInfo.data.province,
-    sex: userInfo.data.gender,
-    headImg: userInfo.data.avatarUrl,
-    phone: ''
-  }
-  request.post('api/wechat/addMember', parmas).then(resMemberInfo => {
-    setStorage('shareNo', resMemberInfo.data.shareNo)
-    setStorage('memberId', resMemberInfo.data.id).then(res => {
-      callback()
-    })
-    // wx.setStorage({
-    //   key: 'memberId',
-    //   data: resMemberInfo.data.id,
-    //   success: function (res) {
-    //     if (callback) {
-    //       console.log('登录后触发首页的回调')
-    //       callback()
-    //     }
-    //   }
-    // })
-  })
-}
-export function formatTime (date) {
-  const year = date.getFullYear()
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-
-  const hour = date.getHours()
-  const minute = date.getMinutes()
-  const second = date.getSeconds()
-
-  const t1 = [year, month, day].map(formatNumber).join('/')
-  const t2 = [hour, minute, second].map(formatNumber).join(':')
-
-  return `${t1} ${t2}`
-}
 // 获取当前页url
 export function getCurrentPageUrl () {
   // eslint-disable-next-line
@@ -224,10 +117,11 @@ export function getInitPositionList (blockInfo, randomFlag) {
 {typeNumber} 矩阵维数 3， 4， 5
 {imgSourceW} 原图片宽度
 */
-export function piecesImage (canvasId, imgSource, imagesInfo) {
+export function piecesImage (canvasId, imgSource, imagesInfo, index) { // index 为点击的第几个
   // 每个切片的宽度 渲染时每个切片的宽 所有需要渲染的坐标
   let {startX, pieceImgSize, imagesPositionArr} = imagesInfo
   const ctx = wx.createCanvasContext(canvasId)
+  ctx.clearRect(0, 1000, 1000, 1000)
   for (var i = 0; i < imagesPositionArr.length; i++) {
     ctx.drawImage(
       imgSource,
@@ -241,6 +135,10 @@ export function piecesImage (canvasId, imgSource, imagesInfo) {
       startX
     )
   }
+  if (index) {
+    ctx.setStrokeStyle('red')
+    ctx.strokeRect(imagesPositionArr[index].canvasPosition[0], imagesPositionArr[index].canvasPosition[0], imagesPositionArr[index].canvasPosition[0], imagesPositionArr[index].canvasPosition[0])
+  }
   ctx.draw(true)
 }
 export function setStorage (key, value) {
@@ -253,12 +151,66 @@ export function getStorage (key) {
     wx.getStorage({ key: key, success: resolve, fail: reject })
   })
 }
+export function getSetting () { // 微信授权
+  return new Promise((resolve, reject) => {
+    wx.getSetting({success: resolve, fail: reject})
+  })
+}
+export function getUserInfo () {
+  return new Promise((resolve, reject) => {
+    wx.getUserInfo({success: resolve, fail: reject})
+  })
+}
+export function loginWeChat () {
+  return new Promise((resolve, reject) => {
+    wx.login({success: resolve, fail: reject})
+  })
+}
+export function downloadFile (url, pageThis) {
+  return new Promise(function (resolve, reject) {
+    wx.downloadFile({
+      url: url,
+      success: resolve,
+      fail: reject
+    })
+  })
+}
+export function getImageInfo (url, pageThis) {
+  return new Promise(function (resolve, reject) {
+    wx.getImageInfo({
+      src: url,
+      success: resolve,
+      fail: reject
+    })
+  })
+}
+/* eslint-disable */
+export function figure (Width,Height,num) {
+  // 图片宽度 高度 拼图难度 
+  var col=[]
+  for(var i = 0; i < num; i++){
+    for (var j = 0; j < num; j++) {
+      var left = 0
+      var top = 0
+      var p = Width / 630
+      left = -1 * (Width / p) * (j / num)
+      top = -1 * (Height / p) * (i / num)
+      var WidthBox = (Width / p) / num - num * 2  
+      var HeightBox = (Height / p) / num - num * 2
+      console.log("测试数据 in figure")
+      console.log(WidthBox)
+      console.log(HeightBox)
+      var objectNum = { id: num * i + j,
+        modalStyle:"height:"+Height/p+"rpx;width:"+Width/p+"rpx;line-height:"+Height/p+"rpx;",
+      picPosi: "width:" + Width/p + "rpx;position:absolute;left:" + left + "rpx;top:" + top + "rpx",
+      BoxPosi: "width:" + WidthBox + "rpx;height:" + HeightBox +"rpx;border:1rpx solid rgba(0,0,0,1);opacity:0.8;"
+      }
+      col.push(objectNum)
+    }
+  }
+  return col
+}
 export default {
-  checkAuthorize,
-  checkLoginApp,
-  loginApp,
-  formatNumber,
-  formatTime,
   getCurrentPageUrl,
   getCurrentPageUrlWithArgs,
   getInitPositionList,
@@ -266,5 +218,10 @@ export default {
   randIndex,
   nomalIndex,
   setStorage,
-  getStorage
+  getStorage,
+  getSetting,
+  loginWeChat,
+  downloadFile,
+  getImageInfo,
+  figure
 }

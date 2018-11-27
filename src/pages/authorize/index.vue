@@ -1,88 +1,90 @@
 <template>
   <div class="authorize_box">
-    <div class="icon_list">
-      <div class="wechat_icon"><img src="../../../static/images/wechat.png" alt=""></div>
-      <div class="change_icon"><img src="../../../static/images/changeIcon.png" alt=""></div>
-      <div class="redpack_icon"><img src="../../../static/images/redIcon.png" alt=""></div>
-    </div>
-    <div class="please_login">
-      Hi，请授权登录~
-    </div>
-    <div class="login_after_tips">
-      授权后可以更好的体验我们哟~
-    </div>
-    <button class="authorize_login" open-type="getUserInfo" lang="zh_CN" @getuserinfo="onGotUserInfo">授权登录</button>
+    <auth-mask v-if="isAuth" @onGotUserInfo="onGotUserInfo"></auth-mask>
   </div>
 </template>
 <script>
-import {setStorage} from '../../utils/index'
+import {loginWeChat, getSetting, getUserInfo, setStorage} from '../../utils/index'
+import authMask from '../../components/modal/mask-auth/index'
 export default {
   data () {
     return {
-      url: ''
+      isAuth: false
     }
   },
   components: {
+    authMask
   },
   methods: {
+    async login () {
+      try {
+        let loginInfo = await loginWeChat()
+        console.log('获取登录code', loginInfo)
+        if (loginInfo.errMsg === 'login:ok') {
+          let loginMemberId = await this.request.post('/api/wechat/login', {jscode: loginInfo.code})
+          console.log('获取loginMemberId', loginMemberId)
+          const memberId = wx.getStorageSync('memberId') || ''
+          if (memberId === loginMemberId.data.memberId) {
+            console.log('已登录')
+            return wx.navigateBack()
+          }
+          // 否则存储用户id
+          await setStorage('memberId', loginMemberId.data.memberId)
+          await setStorage('token', loginMemberId.data.token)
+          // 获取用户信息
+          const userInfo = await getUserInfo()
+          console.log('获取userInfo', userInfo)
+          // 存储用户信息
+          await setStorage('userInfo', userInfo.userInfo)
+          // 保存到后端
+          await this.request.post('/api/wechat/addMember', {
+            memberId: loginMemberId.data.memberId,
+            encryptedData: userInfo.encryptedData,
+            iv: userInfo.iv
+          })
+          console.log('保存用户信息成功')
+          let memberInfo = await this.request.get('/api/sys/config/memberInfo', {memberId: loginMemberId.data.memberId})
+          await setStorage('shareNo', memberInfo.data.shareNo)
+          wx.navigateBack()
+        }
+      } catch (err) {
+        console.log('error in auth==>', err)
+      }
+    },
     onGotUserInfo (e) {
-      let url = decodeURIComponent(this.$root.$mp.query.url)
-      console.log('curUrl in auth before', this.$root.$mp.query, url)
-      if (e.target.userInfo) {
-        setStorage('userInfo', e.target.userInfo)
-        let curUrl = url.replace(/^pages/g, '..')
-        wx.reLaunch({url: curUrl})
+      if (e.mp.detail.errMsg === 'getUserInfo:ok') {
+        this.login()
+        this.isAuth = false
+      } else {
+        this.isAuth = true
+      }
+    },
+    async checkUserAuth () {
+      console.log('检查是否有授权')
+      let this_ = this
+      // 判断是否获取授权
+      let getSettingInfo = await getSetting()
+      // 有授权就登录
+      if (getSettingInfo.authSetting['scope.userInfo']) {
+        console.log('有授权，去登录')
+        this_.isAuth = false
+        this_.login()
+      } else {
+        console.log('没有授权，去授权')
+        this_.isAuth = true
       }
     }
+  },
+  onLoad () {
+    this.isAuth = true
   }
 }
 </script>
 <style>
 .authorize_box{
   width: 100%;
-  height: 100%;
   position: fixed;
+  z-index: 9999;
 }
-.authorize_box .icon_list{
-  display: flex;
-  margin: 119rpx 207rpx;
-  align-items: center;
-  justify-content: space-around;
-}
-.authorize_box .icon_list .wechat_icon img{
-  width:100rpx;
-  height:100rpx;
-}
-.authorize_box .icon_list .change_icon img{
-  width:38rpx;
-  height:38rpx;
-}
-.authorize_box .icon_list .redpack_icon img{
-  width:100rpx;
-  height:100rpx;
-}
-.please_login{
-  text-align: center;
-  font-size:36rpx;
-  font-weight:400;
-  color:rgba(0,0,0,1);
-}
-.login_after_tips{
-  margin: 20rpx 0 62rpx 0;
-  text-align: center;
-  font-size:28rpx;
-  font-weight:400;
-  color:rgba(0,0,0,1);
-}
-.authorize_login{
-  width: 80%;
-  margin: 0 auto;
-  line-height: 88rpx;
-  height:88rpx;
-  background:rgba(255,67,71,1);
-  border-radius:4rpx;
-  font-size:28rpx;
-  font-weight:400;
-  color:rgba(255,255,255,1);
-}
+
 </style>

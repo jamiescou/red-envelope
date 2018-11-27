@@ -39,17 +39,19 @@
                 {{typeMap[item.type]}}
               </div>
               <div class="creat_time">
-                {{item.createTime}}
+                {{item.createTimeShow}}
               </div>
             </div>
           </div>
         </scroll-view>
       </div>
     </div>
+    <!-- <authorize @getAuthOk='getAuthOk' ref="checkUserAuth"></authorize> -->
   </div>
 </template>
 <script>
-import {checkAuthorize, getCurrentPageUrlWithArgs} from '../../utils/index'
+// import authorize from '../../components/modal/authorize/index'
+import { getSetting, loginWeChat, setStorage, getStorage } from '../../utils/index'
 export default {
   data () {
     return {
@@ -66,6 +68,7 @@ export default {
     }
   },
   components: {
+    // authorize
   },
   methods: {
     initData () {
@@ -81,14 +84,78 @@ export default {
         }
         if (res.data.page > 1) {
           this_.packageData = this_.packageData.concat(res.data.data)
-          console.log('length=>', this.packageData.length)
           return
         }
         this_.packageData = res.data.data
-        console.log('length=>', this.packageData.length)
       }).catch(err => {
         console.log(err)
       })
+      this.addFriendRelationSave()
+    },
+    async addFriendRelationSave () {
+      console.log('this==>>', this)
+      let shareNo = this.$root.$mp.query.shareNo
+      const memberId = await getStorage('memberId')
+      let postData = {
+        memberId: memberId.data,
+        shareNo
+      }
+      console.log('postData', postData)
+      if (shareNo) {
+        let saveFriendRelationInfo = await this.request.post('/api/friendRelation/save', postData)
+        console.log('saveFriendRelationInfo', saveFriendRelationInfo)
+      }
+    },
+    async checkUserAuth () {
+      console.log('检查是否有授权')
+      let this_ = this
+      // 判断是否获取授权
+      let getSettingInfo = await getSetting()
+      // 有授权就登录
+      if (getSettingInfo.authSetting['scope.userInfo']) {
+        console.log('有授权', getSettingInfo)
+        let loginInfo = await loginWeChat()
+        console.log('首页获取登录code', loginInfo)
+        if (loginInfo.errMsg === 'login:ok') {
+          let loginMemberId = await this.request.post('/api/wechat/login', {jscode: loginInfo.code})
+          console.log('获取loginMemberId', loginMemberId)
+          const memberId = wx.getStorageSync('memberId') || ''
+          const token = wx.getStorageSync('memberId') || ''
+          if (memberId === loginMemberId.data.memberId && token === loginMemberId.data.token) {
+            console.log('已登录')
+            let memberInfo = await this.request.get('/api/sys/config/memberInfo', {memberId: loginMemberId.data.memberId})
+            await setStorage('shareNo', memberInfo.data.shareNo)
+            this_.initData()
+          } else {
+            // let token = '123456789'
+            console.log('鉴定有无数据', loginMemberId && loginMemberId.data && loginMemberId.data.token)
+            console.log('未登录loginMemberId', loginMemberId.data.token)
+            try { await setStorage('token', loginMemberId.data.token) } catch (err) {
+              console.log('errrr', err)
+            }
+            // try { wx.setStorageSync('token', loginMemberId.data.token) } catch (err) {
+            //   console.log('errrr', err)
+            // }
+            await setStorage('memberId', loginMemberId.data.memberId)
+            let memberInfo = await this.request.get('/api/sys/config/memberInfo', {memberId: loginMemberId.data.memberId})
+            console.log('未登录memberInfo', memberInfo)
+            await setStorage('shareNo', memberInfo.data.shareNo)
+            // try {
+            //   await setStorage('shareNo', memberInfo.data.shareNo)
+            //   await setStorage('memberId', loginMemberId.data.memberId)
+            //   await setStorage('token', loginMemberId.data.token)
+            // } catch (err) {
+            //   wx.showToast(err)
+            // }
+            this_.initData()
+          }
+        }
+      } else {
+        console.log('无授权')
+        wx.navigateTo({
+          url: '../authorize/main'
+        })
+      }
     },
     redPackageDetail (detailInfo) {
       let type = detailInfo.type
@@ -99,17 +166,15 @@ export default {
     showModal () {
       this.isShowModal = true
     },
-    upper (e) {
-    },
     lower (e) {
       let this_ = this
       if (!this_.currentPage || this_.currentPage === this_.totalPage) {
         return
       }
-      wx.hideToast()
       if (this_.currentPage < this_.totalPage) {
         this_.currentPage++
         if (this_.currentPage > this_.totalPage) {
+          wx.hideToast()
           wx.showToast({
             title: '没有更多数据',
             icon: 'success',
@@ -118,16 +183,17 @@ export default {
           return
         }
       }
-      console.log('currentPage', this.currentPage)
       this.initData()
-      console.log('low', e)
     }
   },
-  created () {},
+  onShow () {
+    this.packageData = []
+    this.currentPage = 1
+    this.totalPage = 1
+    this.checkUserAuth()
+  },
   onLoad () {
     let this_ = this
-    let url = getCurrentPageUrlWithArgs()
-    checkAuthorize('index', this.initData, url)
     wx.getSystemInfo({
       success: function (res) {
         // 可使用窗口宽度、高度
@@ -136,18 +202,17 @@ export default {
       }
     })
     console.log('我是首页加载测试')
+  },
+  onUnload () {
+    this.packageData = []
+    this.currentPage = 1
+    this.totalPage = 1
   }
 }
 </script>
 
 <style scoped>
   .container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    box-sizing: border-box;
   }
   .ground_outer{
     width: 100%;
@@ -162,7 +227,6 @@ export default {
   .ground_inner{
     width: 92%;
     height: 94%;
-    overflow: scroll;
     background: white;
     background:rgba(255,255,255,1);
     border-radius:10rpx;
@@ -191,6 +255,10 @@ export default {
     width: 15%;
   }
   .nick_name ._name{
+    width:160rpx;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size:14px;
     font-weight:400;
     color:rgba(102,102,102,1);
@@ -203,7 +271,7 @@ export default {
      height: 19rpx;
    }
   .package_info{
-    margin-left: 15.1%;
+    margin-left: 10%;
     width: 20%;
     text-align: center;
   }

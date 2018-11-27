@@ -11,38 +11,47 @@
     </div>
     <div class="user_record_info">
       <div class="head_img">
-        <img :src="headImg" alt="">
+        <img :src="userInfo.avatarUrl" alt="">
       </div>
       <div class="name_obtain">
-        哈皮哥  共收到<span>(元)</span>
+        {{userInfo.nickName}}  共{{packName}}<span>(元)</span>
       </div>
       <div class="_money">
-        8.88
+        {{balance}}
       </div>
       <div class="all_count">
-        数量<span>3</span>个
+        数量<span>{{num}}</span>个
       </div>
     </div>
-    <div class="user_record_list">
-      <div class="list_item_box" v-for="item in recordList" :key='item.id' @click="backRedPackage(id)">
-        <div class="name_balance">
-          <div class="_name">
-            {{item.contentText}}
+    <scroll-view scroll-y
+          :style='scrollStyles'
+          upper-threshold='50'
+          lower-threshold='50'
+          @scrolltoupper="upper"
+          @scrolltolower="lower"
+          @scroll="scroll"
+          scroll-top="scrollTop">
+      <div class="user_record_list">
+        <div class="list_item_box" v-for="item in recordList" :key='item.id' @click="backRedPackage(item)">
+          <div class="name_balance">
+            <div class="_name">
+              {{item.type === 1 ? '拼图红包' : item.contentText}}
+            </div>
+            <div class="_balance">
+              ￥ {{item.money}}
+            </div>
           </div>
-          <div class="_balance">
-            ￥ {{item.money}}
-          </div>
-        </div>
-        <div class="date_number">
-          <div class="_date">
-            {{item.createTime}}
-          </div>
-          <div class="_number">
-            ({{item.giveOffNum}}/{{item.num}})
+          <div class="date_number">
+            <div class="_date">
+              {{item.createTime}}
+            </div>
+            <div class="_number">
+              ({{item.giveOffNum}}/{{item.num}})
+            </div>
           </div>
         </div>
       </div>
-    </div>
+     </scroll-view>
   </div>
 </template>
 <script>
@@ -64,22 +73,56 @@ export default {
           active: false
         }
       ],
+      balance: '',
+      num: '',
+      scrollStyles: '',
+      userInfo: {},
+      packName: '',
       recordList: []
     }
   },
   methods: {
+    getCountData (type) {
+      let that = this
+      let postParams = {
+        memberId: this.memberId
+      }
+      let url = ''
+      if (type === 1) {
+        this.packName = '发出'
+        url = '/api/sendOutRecord/sumSendOutMoney' // 我发出的红包
+        // 发出和收到红包总额
+        this.request.get(url, postParams).then(res => {
+          that.balance = res.data[0].money
+          that.num = res.data[0].count
+        }).catch(err => {
+          console.log(err)
+        })
+        return
+      }
+      if (type === 2) {
+        this.packName = '收到'
+        url = '/api/receiveRecord/sumMoney' // 我收到的
+      }
+      // 发出和收到红包总额
+      this.request.post(url, postParams).then(res => {
+        that.balance = res.data[0].money
+        that.num = res.data[0].count
+      }).catch(err => {
+        console.log(err)
+      })
+    },
     getRecordData (type) {
       let url = '/api/sendOutRecord/listByMember' // 我发出的红包
       if (type === 2) {
-        url = '/api/receiveRecord/list'
+        url = '/api/receiveRecord/list' // 我收到的
       }
       let that = this
       let postParams = {
         page: 1,
-        limit: 10,
-        memberId: 100132
+        limit: 100,
+        memberId: this.memberId
       }
-      // 调用应用实例的方法获取全局数据
       this.request.post(url, postParams).then(res => {
         that.recordList = res.data.data
       }).catch(err => {
@@ -99,12 +142,13 @@ export default {
         tempArr.push(item)
       })
       this.tabData = tempArr
+      this.getCountData(id)
       this.getRecordData(id)
     },
-    backRedPackage (id) {
+    backRedPackage (item) {
       wx.navigateTo(
         {
-          url: `/pages/red-package/detail/main?type=1`
+          url: `/pages/red-package/detail/main?type=${item.type}&id=${item.id}`
         }
       )
     }
@@ -112,7 +156,38 @@ export default {
   created () {
   },
   onLoad () {
+    let that = this
+    this.memberId = wx.getStorageSync('memberId')
+    this.userInfo = wx.getStorageSync('userInfo')
+    this.getCountData(1)
     this.getRecordData(1)
+    wx.getSystemInfo({
+      success: function (res) {
+        // 可使用窗口宽度、高度
+        that.scrollStyles = `height: ${res.windowHeight}px`
+        // 计算主体部分高度,单位为px
+      }
+    })
+  },
+  onUnload () {
+    this.headImg = '../../../static/images/test_img.png'
+    this.tabData = [
+      {
+        type: 1,
+        name: '我发出的',
+        active: true
+      },
+      {
+        type: 2,
+        name: '我收到的',
+        active: false
+      }
+    ]
+    this.balance = ''
+    this.num = ''
+    this.userInfo = {}
+    this.packName = ''
+    this.recordList = []
   }
 }
 </script>

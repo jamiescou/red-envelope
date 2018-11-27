@@ -1,7 +1,7 @@
 <template>
   <div class="play_fail_page">
     <div class="fail_picture">
-      <img src="../../../../static/images/fail.png" alt="">
+      <img src="http://img.dhqcy.cn/hb/fail.png" alt="">
     </div>
     <div class="fail_info">
       虽败犹荣，您几百了全国96.66%的玩家
@@ -25,7 +25,7 @@ export default {
   methods: {
     challengeAgain () {
       wx.navigateTo({
-        url: `/pages/red-package/detail/main?type=${this.type}`
+        url: `/pages/red-package/detail/main?type=${this.type}&id=${this.id}`
       })
     },
     backIndex () {
@@ -39,6 +39,7 @@ export default {
   },
   onLoad () {
     this.type = this.$root.$mp.query.type
+    this.id = this.$root.$mp.query.id
   }
 }
 </script>

@@ -23,29 +23,30 @@
           <div class="title_text">
             我的余额
           </div>
-          
         </div>
-        <div class="contact_customer_service">
+        <button class="contact_customer_service" open-type="contact">
           <div class="_customer_img">
             <img src="../../../../static/images/customer.png" alt="">
           </div>
           <div class="title_text">
             联系客服
           </div>
-        </div>
+        </button>
       </div>
-      <div class="any_question">
+      <div class="any_question" @click="moreInfomation()">
         常见问题
       </div>
     </div>
-    <div class="more_play bottom_common">
+    <div class="more_play bottom_common" @click="morePlay()">
       <div class="_title">更多玩法</div>
       <div class="_next_step">></div>
     </div>
-    <div class="invited_friend bottom_common">
-      <div class="_title">推荐给朋友</div>
-      <div class="_next_step">></div>
-    </div>
+    <button open-type="share">
+      <div class="invited_friend bottom_common">
+        <div class="_title">推荐给朋友</div>
+        <div class="_next_step">></div>
+      </div>
+    </button>
   </div>
 </template>
 
@@ -57,30 +58,63 @@ export default {
   data () {
     return {
       balance: '',
-      headImg: '../../../static/images/test_img.png'
+      headImg: '../../../static/images/test_img.png',
+      shareNo: '',
+      shareInfo: ''
     }
   },
   methods: {
+    morePlay () {
+      wx.switchTab({
+        url: '/pages/more/main'
+      })
+    },
     myRecord () {
       wx.navigateTo({url: '../record/main'})
     },
     myBalance () {
       wx.navigateTo({url: '../balance/main'})
+    },
+    moreInfomation () {
+      wx.navigateTo({
+        url: '../more-info/main'
+      })
     }
   },
   created () {
   },
-  onLoad () {
-    let that = this
-    let postParams = {
-      memberId: 100132
+  onShareAppMessage (res) {
+    if (res.from !== 'button') return false
+    return {
+      title: this.shareInfo.title,
+      path: '/pages/index/main?shareNo=' + this.shareNo,
+      imageUrl: this.shareInfo.img
     }
-    // 调用应用实例的方法获取全局数据
-    this.request.post('/api/receiveRecord/sumMoney', postParams).then(res => {
-      that.balance = res.data
+  },
+  async onShow () {
+    let that = this
+    this.memberId = wx.getStorageSync('memberId')
+    this.shareNo = wx.getStorageSync('shareNo')
+    let postParams = {
+      memberId: this.memberId
+    }
+    // 拿取分享信息
+    this.request.get('/api/shareConfig/queryOne?type=4').then(res => {
+      that.shareInfo = res.data
     }).catch(err => {
       console.log(err)
     })
+    // 获取余额
+    this.request.get('/api/sys/config/memberInfo', postParams).then(res => {
+      that.balance = res.data.money
+      that.headImg = res.data.headImg
+    }).catch(err => {
+      console.log(err)
+    })
+  },
+  onUnload () {
+    this.balance = ''
+    this.headImg = ''
   }
 }
 </script>
@@ -113,6 +147,12 @@ export default {
     align-items: center;
     margin: 0 5%;
   }
+.play_style_box button{
+    padding: 0;
+    color:rgba(255,255,255,1);
+    background: #fff !important;
+  }
+.play_style_box button::after{ border: none; }
   .my_info_box .my_info_bottom .my_record{
     font-size:24rpx;
     font-family:PingFangSC;

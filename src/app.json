@@ -16,6 +16,7 @@
     "pages/play-detail/fail/main",
     "pages/red-package/detail/main",
     "pages/my/record/main",
+    "pages/my/more-info/main",
     "pages/my/balance/main",
     "pages/my/balance-detail/main",
     "pages/authorize/main"

@@ -100,6 +100,7 @@ export default {
   created () {
   },
   onLoad () {
+    this.isShowModal = false
     this.tempTextList = []
     this.timeSeconds = 30
     this.textContent = this.$root.$mp.query.content
@@ -115,6 +116,7 @@ export default {
     }
   },
   onUnload () {
+    this.isShowModal = false
     clearInterval(this.timer)
   }
 }

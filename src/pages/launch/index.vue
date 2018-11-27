@@ -1,16 +1,18 @@
 <template>
   <div class="play_style_box">
-    <div class="play_style_list" v-for="item in playStyleData" :key="item.id" @click="bindViewTap(item.name)">
-      <div class="play_icon">
-        <img :src="item.icon" alt="">
-      </div>
-      <div class="play_title">
-        <div class="title_name">
-          {{item.title}}
+    <div class="list_">
+      <div class="play_style_list" v-for="item in playStyleData" :key="item.id" @click="bindViewTap(item.name)">
+        <div class="play_icon">
+          <img :src="item.icon" alt="">
         </div>
-        <div class="dark_line"></div>
-        <div class="title_desc">
-          {{item.desc}}
+        <div class="play_title">
+          <div class="title_name">
+            {{item.title}}
+          </div>
+          <div class="dark_line"></div>
+          <div class="title_desc">
+            {{item.desc}}
+          </div>
         </div>
       </div>
     </div>
@@ -18,7 +20,6 @@
 </template>
 
 <script>
-
 export default {
   components: {
   },
@@ -58,8 +59,6 @@ export default {
       const url = `../play-types/${name}/main`
       wx.navigateTo({url})
     }
-  },
-  created () {
   }
 }
 </script>
@@ -70,6 +69,11 @@ export default {
     height: 100%;
     position: fixed;
     background: #f4f4f4;
+  }
+  .play_style_box .list_{
+    width: 100%;
+    height: 100%;
+    position: fixed;
   }
   .play_style_list{
     display: flex;

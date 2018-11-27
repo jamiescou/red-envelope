@@ -20,7 +20,7 @@
       <div class="custom_set">
         <div class="_title">自定义</div>
         <div class="field_time">
-          <input @change="fieldTimeData" placeholder-class="place-holder" placeholder="填写时间" />
+          <input @change="fieldTimeData" type='number' placeholder-class="place-holder" placeholder="填写时间" />
           <span class="_fixed">s</span>
         </div>
       </div>

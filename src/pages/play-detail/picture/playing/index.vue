@@ -4,22 +4,24 @@
     <div class="count_times">
       {{timeSeconds}}s
     </div>
-    <div class="text_content" v-if="!isShowModal">
-      <canvas
-        class="canvas_picture"
-        :style='canvasStyles'
-        disable-scroll=false
-        v-on:touchstart='canvasClick'
-        canvas-id="playingPic">
-      </canvas>
+    <div :style="picBox">
+      <div v-for="(item, index) in pic" :key="index">
+        <div
+          class='image_box'
+          :class="activeIndex === index ? 'activeClass' : ''"
+          :style='item.BoxPosi'
+          @click="clickImage($event, index)">
+          <image mode='widthFix' :src='imgSource' :style='item.picPosi' />
+        </div>
+      </div>
     </div>
     <CatchSuccess :isShowModal="isShowModal" :packageInfo="packageInfo"></CatchSuccess>
   </div>
 </template>
 <script>
-import { setInterval, clearInterval } from 'timers'
+// import { setInterval, clearInterval } from 'timers'
 import CatchSuccess from '../../../../components/modal/catch-sucess/index'
-import { getBasicBlockInfo, getInitPositionList, piecesImage, nomalIndex } from '../../../../utils/index'
+import { getImageInfo, figure } from '../../../../utils/index'
 export default {
   components: {
     CatchSuccess
@@ -28,19 +30,24 @@ export default {
     return {
       isShowModal: false,
       packageInfo: {
-        // headImg: '../../../../static/images/test_img.png',
+        headImg: '',
         hasPack: false,
         sendOutRecordId: '',
         useTimes: ''
       },
+      picBox: 'margin:30rpx auto;width:630rpx;height:630rpx;postion:relative',
+      pic: [],
+      pic1: [],
       textContent: '',
       canvasStyles: `width: 315px`,
       timer: null,
-      gameTime: 120,
-      timeSeconds: 120,
+      gameTime: 0,
+      timeSeconds: 0,
       initPositions: {},
+      imgSource: '',
       imgOption: {},
       tempIndex: [],
+      activeIndex: -1,
       levelMap: {
         1: 3,
         2: 4,
@@ -50,85 +57,70 @@ export default {
   },
   methods: {
     initData () {
-      console.log('init', this.levelMap, this.level)
-      this.imgOption = getBasicBlockInfo(this, this.levelMap[this.level], 500) // 获取切片的信息
-      let imageInfos = getInitPositionList(this.imgOption, true)
-      this.initPositions = imageInfos
-      piecesImage('playingPic', this.imgSource, imageInfos)
-      clearInterval(this.timer)
+      const temp = figure(this.loadImgSrc.height, this.loadImgSrc.height, this.levelMap[this.level])
+      this.pic1 = temp
+      this.sortRandom()
       this.timer = setInterval(() => {
         this.timeSeconds--
         if (this.timeSeconds === 0) {
           clearInterval(this.timer)
-          const url = `../../../play-detail/fail/main?type=2`
+          const url = `../../../play-detail/fail/main?type=1&id=${this.id}`
           wx.redirectTo({url})
         }
       }, 1000)
     },
-    canvasClick (e) {
-      let curPageX = e.x
-      let curPageY = e.y
-      let {startX, breakSpace} = this.imgOption // 切片宽度等信息
-      let {imagesPositionArr} = this.initPositions // 带canvas坐标
-      let itemRangePos = []
-      let indexOriginList = nomalIndex(this.levelMap[this.level])
-      for (var i = 0; i < imagesPositionArr.length; i++) {
-        itemRangePos.push([imagesPositionArr[i].canvasPosition, [imagesPositionArr[i].canvasPosition[0] + startX + breakSpace, imagesPositionArr[i].canvasPosition[1] + startX + breakSpace]])
+    sortRandom () {
+      const temp = figure(this.loadImgSrc.height, this.loadImgSrc.height, this.levelMap[this.level])
+      this.pic = temp.sort(function (a, b) { return Math.random() > 0.5 ? -1 : 1 }) // 打乱顺序
+    },
+    clickImage (e, index) {
+      this.tempIndex.push(index)
+      this.activeIndex = this.tempIndex[0]
+      if (this.tempIndex.length === 2) {
+        let tempPic0 = this.pic[this.tempIndex[0]]
+        let tempPic1 = this.pic[this.tempIndex[1]]
+        this.pic[this.tempIndex[0]] = tempPic1
+        this.pic[this.tempIndex[1]] = tempPic0
+        this.tempIndex = []
+        this.activeIndex = -1
       }
-      let dis = [curPageX, curPageY]
-      let index = -1
-      for (var k = 0; k < itemRangePos.length; k++) {
-        let item = itemRangePos[k]
-        let x1 = item[0][0]
-        let x2 = item[1][0]
-        let y1 = item[0][1]
-        let y2 = item[1][1]
-        if (dis[0] > x1 && dis[0] < x2 && dis[1] > y1 && dis[1] < y2) {
-          index = k
+      var i
+      var len = this.pic.length
+      for (i = 0; i < len; i++) {
+        if (this.pic[i].id !== this.pic1[i].id) {
           break
         }
       }
-      this.tempIndex.push(index)
-      if (this.tempIndex.length === 2) {
-        let tempImgData0 = imagesPositionArr[this.tempIndex[0]].imgPosition
-        let tempImgData1 = imagesPositionArr[this.tempIndex[1]].imgPosition
-        imagesPositionArr[this.tempIndex[0]].imgPosition = tempImgData1
-        imagesPositionArr[this.tempIndex[1]].imgPosition = tempImgData0
-        piecesImage('playingPic', this.imgSource, this.initPositions)
-        this.tempIndex = []
-        tempImgData0 = null
-        tempImgData1 = null
-        let tempIndexList = []
-        for (var n = 0; n < imagesPositionArr.length; n++) {
-          tempIndexList.push(imagesPositionArr[n].imgPosition[2].imgIndex)
-        }
-        console.log('当前索引', tempIndexList, '原始索引', indexOriginList)
-        if (tempIndexList.toString() === indexOriginList.toString()) {
-          clearInterval(this.timer)
-          this.packageInfo.hasPack = true
-          this.packageInfo.type = 1
-          this.packageInfo.sendOutRecordId = this.id
-          this.packageInfo.useTimes = this.gameTime - this.timeSeconds
-          this.isShowModal = true
-          console.log('okay,匹配成功 用时', this.gameTime - this.timeSeconds)
-        }
+      if (i === len) {
+        clearInterval(this.timer)
+        console.log('拼好了')
+        this.packageInfo.hasPack = true
+        this.packageInfo.type = 1
+        this.packageInfo.sendOutRecordId = this.id
+        this.packageInfo.useTimes = this.gameTime - this.timeSeconds
+        this.isShowModal = true
       }
     }
   },
   created () {
     clearInterval(this.timer)
   },
-  onLoad () {
+  onShow () {
     clearInterval(this.timer)
-    // this.imgSource = '../../../../../static/images/001809191413098212.jpg'
+  },
+  async onLoad () {
+    this.isShowModal = false
+    clearInterval(this.timer)
     this.imgSource = this.$root.$mp.query.content
+    this.loadImgSrc = await getImageInfo(this.imgSource) // 下载图片到本地
     this.id = this.$root.$mp.query.id
     this.gameTime = this.$root.$mp.query.gameTime
-    this.level = this.$root.$mp.query.level ? 1 : 2
+    this.level = this.$root.$mp.query.level
     this.timeSeconds = this.$root.$mp.query.gameTime
     this.initData()
   },
   onUnload () {
+    this.isShowModal = false
     clearInterval(this.timer)
   }
 }
@@ -153,12 +145,23 @@ export default {
   line-height: 168rpx;
   text-align: center;
 }
+.activeClass{
+  border:1rpx solid rgba(255,255,255,1) !important;
+}
 .canvas_picture{
-  position: relative;
-  z-index: -1;
+  /* position: relative;
+  z-index: -1; */
   /* margin: 2% 6.7%; */
   /* text-align: center; */
   /* margin: 22rpx auto; */
+}
+.image_box {
+  margin:0 auto;
+  width:160rpx;
+  height:160rpx;
+  overflow: hidden;
+  position:relative;
+  float:left;
 }
 .text_content{
   position: relative;

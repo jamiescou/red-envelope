@@ -6,7 +6,7 @@
       style="background: url('http://img.dhqcy.cn/hb/packageout.png') no-repeat fixed center"
       v-if="isShowModal">
       <div class="head_img">
-        <img :src="packageInfo.headImg" alt="">
+        <img :src="headImg" alt="">
       </div>
       <div class="modal_tips" v-if="result === 1">
         <!-- 恭喜你答对了 -->
@@ -28,25 +28,80 @@
 
 <script>
 export default {
-  props: ['isShowModal', 'packageInfo'],
+  props: ['isShowModal', 'packageInfo', 'callBackModal'],
   data () {
     return {
-      result: 1
+      result: 1,
+      headImg: ''
     }
   },
   methods: {
     openPackage () {
-      let { sendOutRecordId, useTimes, type } = this.packageInfo
+      let that = this
+      let { sendOutRecordId, useTimes, type, audioFilePath } = this.packageInfo
+      if (type === 3) {
+        setTimeout(function () {
+          // 上传录音
+          let urls = 'https://hbbeta.dhchecheng.com/api/upload/audio'
+          wx.uploadFile({
+            url: urls,
+            filePath: audioFilePath,
+            name: 'file',
+            header: {
+              'content-type': 'multipart/form-data'
+            },
+            formData: {
+              sendOutRecordId
+            },
+            success: function (res) {
+              console.log('点击开上传语音', res)
+              let dataRes = JSON.parse(res.data)
+              if (dataRes.code === '200') {
+                let postParams = {
+                  memberId: that.memberId,
+                  result: 1,
+                  sendOutRecordId,
+                  useTime: useTimes,
+                  audio: dataRes.data.url
+                }
+                console.log('点击开准备抢红包的参数', postParams)
+                // 点击开 抢红包
+                that.request.post('/api/receiveRecord/gainRedEnvelope', postParams).then(resp => {
+                  console.log('点击开抢到红包的返回', resp)
+                  that.result = resp.data.result
+                  if (that.result === 1) {
+                    console.log('点击开抢到红包的返回', that.result)
+                    that.$emit('callBackModal', false)
+                  }
+                }).catch(err => {
+                  console.log(err)
+                })
+              }
+            },
+            fail: function (res) {
+              wx.showModal({
+                title: '提示',
+                content: '网络请求失败，请确保网络是否正常',
+                showCancel: false,
+                success: function (res) {
+                }
+              })
+            }
+          })
+        })
+        return
+      }
       let postParams = {
-        memberId: 100132,
+        memberId: that.memberId,
         result: 1,
         sendOutRecordId,
         useTime: useTimes
       }
       // 点击开 抢红包
-      this.request.post('/api/receiveRecord/gainRedEnvelope', postParams).then(res => {
-        this.result = res.data.result
-        if (this.result === 1) {
+      that.request.post('/api/receiveRecord/gainRedEnvelope', postParams).then(res => {
+        that.result = res.data.result
+        if (that.result === 1) {
+          that.$emit('callBackModal', false)
           wx.redirectTo({
             url: `/pages/red-package/detail/main?type=${type}&id=${sendOutRecordId}`
           })
@@ -63,6 +118,22 @@ export default {
     }
   },
   created () {
+    // 获取余额
+    let that = this
+    this.memberId = wx.getStorageSync('memberId')
+    this.request.get('/api/sys/config/memberInfo', {memberId: this.memberId}).then(res => {
+      that.headImg = res.data.headImg
+    }).catch(err => {
+      console.log(err)
+    })
+  },
+  onShow () {
+  },
+  onLoad () {
+    this.memberId = wx.getStorageSync('memberId')
+  },
+  onHide () {
+    this.isShowModal = false
   },
   onUpload () {
     this.isShowModal = false
