@@ -1,45 +1,47 @@
 <template>
   <div class="level_range_box">
-    <div class="two_btn_level">
-      <div class="level_btn_common level_border_left" :class="levelType === 1 ? 'challenge_level' : 'money_level'" @click="changeLevelType(2)">挑战榜</div>
-      <div class="level_btn_common level_border_right" :class="levelType === 2 ? 'challenge_level' : 'money_level'" @click="changeLevelType(1)">金额榜</div>
-    </div>
-    <div class="level_stage">
-      <div class="second_level">
-        <div class="second_icon"><img :src="topThree[1] && topThree[1].headImg" alt=""></div>
-        <div class="second_name three_level_common">{{topThree[1] && topThree[1].nickname}}</div>
-        <div v-if="levelType === 1" class="second_money three_level_common">¥{{topThree[1] && topThree[1].sumMoney}}</div>
-        <div v-if="levelType === 2" class="second_money three_level_common">{{topThree[1] && topThree[1].count}}次</div>
+    <div class="contain_box">
+      <div class="two_btn_level">
+        <div class="level_btn_common level_border_left" :class="levelType === 1 ? 'challenge_level' : 'money_level'" @click="changeLevelType(2)">挑战榜</div>
+        <div class="level_btn_common level_border_right" :class="levelType === 2 ? 'challenge_level' : 'money_level'" @click="changeLevelType(1)">金额榜</div>
       </div>
-      <div class="frist_level">
-        <div class="frist_icon"><img :src="topThree[0] && topThree[0].headImg" alt=""></div>
-        <div class="frist_name three_level_common">{{topThree[0] && topThree[0].nickname}}</div>
-        <div v-if="levelType === 1" class="frist_money three_level_common">¥{{topThree[0] && topThree[0].sumMoney}}</div>
-        <div v-if="levelType === 2" class="frist_money three_level_common">{{topThree[0] && topThree[0].count}}次</div>
+      <div class="level_stage">
+        <div class="second_level">
+          <div class="second_icon"><img :src="topThree[1] && topThree[1].headImg" alt=""></div>
+          <div class="second_name three_level_common"><span>{{topThree[1] && topThree[1].nickname}}</span></div>
+          <div v-if="levelType === 1" class="second_money three_level_common">¥{{topThree[1] && topThree[1].sumMoney}}</div>
+          <div v-if="levelType === 2" class="second_money three_level_common">{{topThree[1] && topThree[1].count}}次</div>
+        </div>
+        <div class="frist_level">
+          <div class="frist_icon"><img :src="topThree[0] && topThree[0].headImg" alt=""></div>
+          <div class="frist_name three_level_common"><span>{{topThree[0] && topThree[0].nickname}}</span></div>
+          <div v-if="levelType === 1" class="frist_money three_level_common">¥{{topThree[0] && topThree[0].sumMoney}}</div>
+          <div v-if="levelType === 2" class="frist_money three_level_common">{{topThree[0] && topThree[0].count}}次</div>
+        </div>
+        <div class="thrid_level">
+          <div class="thrid_icon"><img :src="topThree[2] && topThree[2].headImg" alt=""></div>
+          <div class="thrid_name three_level_common"><span>{{topThree[2] && topThree[2].nickname}}</span></div>
+          <div v-if="levelType === 1" class="thrid_money three_level_common">¥{{topThree[2] && topThree[2].sumMoney}}</div>
+          <div v-if="levelType === 2" class="thrid_money three_level_common">{{topThree[2] && topThree[2].count}}次</div>
+        </div>
       </div>
-      <div class="thrid_level">
-        <div class="thrid_icon"><img :src="topThree[2] && topThree[2].headImg" alt=""></div>
-        <div class="thrid_name three_level_common">{{topThree[2] && topThree[2].nickname}}</div>
-        <div v-if="levelType === 1" class="thrid_money three_level_common">¥{{topThree[2] && topThree[2].sumMoney}}</div>
-        <div v-if="levelType === 2" class="thrid_money three_level_common">{{topThree[2] && topThree[2].count}}次</div>
-      </div>
-    </div>
-    <div class="level_list">
-      <div class="level_list_item" v-for="(item, index) in levelList" :key="index">
-        <div class="item_index">
-          {{index + 4}}
-        </div>
-        <div class="item_head_img">
-          <img :src="item.headImg" alt="">
-        </div>
-        <div class="item_nickname">
-          {{item.nickname}}
-        </div>
-        <div v-if="levelType === 1" class="item_balance">
-          ￥ {{item.sumMoney}}
-        </div>
-        <div v-if="levelType === 2" class="item_balance">
-          {{item.count}}次
+      <div class="level_list">
+        <div class="level_list_item" v-for="(item, index) in levelList" :key="index">
+          <div class="item_index">
+            {{index + 4}}
+          </div>
+          <div class="item_head_img">
+            <img :src="item.headImg" alt="">
+          </div>
+          <div class="item_nickname">
+            {{item.nickname}}
+          </div>
+          <div v-if="levelType === 1" class="item_balance">
+            ￥ {{item.sumMoney}}
+          </div>
+          <div v-if="levelType === 2" class="item_balance">
+            {{item.count}}次
+          </div>
         </div>
       </div>
     </div>
@@ -47,7 +49,6 @@
 </template>
 
 <script>
-
 export default {
   components: {
   },
@@ -66,29 +67,39 @@ export default {
       this.getRangeData(type)
     },
     getRangeData (type) {
-      let that = this
       let postParams = {
         page: 1,
         limit: 4,
-        memberId: 100132,
+        memberId: this.memberId,
         type: type
       }
       // 调用应用实例的方法获取全局数据
       this.request.post('/api/receiveRecord/rankingList', postParams).then(res => {
-        this.topThree = res.data.length > 2 && res.data.splice(0, 3)
-        that.levelList = res.data
+        if (res.data.length <= 2) {
+          this.topThree = res.data
+        } else {
+          this.topThree = res.data.splice(0, 3)
+          this.levelList = res.data
+        }
       }).catch(err => {
         console.log(err)
       })
     }
   },
-  onLoad () {
-    let initType = 2
-    this.getRangeData(initType)
+  onShow () {
+    this.headImg = ''
+    this.topThree = []
+    this.levelType = 2
+    this.levelList = []
+    this.initType = 2
+    this.memberId = wx.getStorageSync('memberId')
+    this.getRangeData(this.initType)
   },
-  created () {
-  },
-  mounted () {
+  onUnload () {
+    this.headImg = ''
+    this.topThree = []
+    this.levelType = 2
+    this.levelList = []
   }
 }
 </script>
@@ -97,6 +108,14 @@ export default {
 .level_range_box{
   width: 100%;
   height: 100%;
+  background: #FF4347;
+  display:-webkit-box;
+	-webkit-box-orient:vertical;
+}
+.contain_box{
+  width: 100%;
+  height: 100%;
+  position: fixed;
   background: #FF4347;
   display:-webkit-box;
 	-webkit-box-orient:vertical;
@@ -212,6 +231,13 @@ export default {
   font-weight:400;
   color:rgba(255,255,255,1);
 }
+.three_level_common span{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width:160rpx;
+  display:inline-block;
+}
 .level_list{
   margin: 0 36rpx;
   padding-left: 30rpx;
@@ -251,8 +277,12 @@ export default {
   border-radius:50%;
 }
 .level_list_item .item_nickname{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding-left: 4%;
-  width: 48%;
+  width: 30%;
+  margin-right: 18%;
   font-size:28rpx;
   font-weight:400;
   color:rgba(51,51,51,1);

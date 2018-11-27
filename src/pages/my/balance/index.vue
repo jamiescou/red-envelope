@@ -6,19 +6,19 @@
         <img src="../../../../static/images/balance.png" alt="">我的余额
       </div>
       <div class="_money_">
-        ￥ 8.88
+        ￥ {{balance}}
       </div>
       <div class="checkout_cash">
         <span class="icon_money">￥</span>
         <input type="digit" placeholder="请输入要提现的金额" v-model="money" @change="changeCash" placeholder-class="money_placehold"/>
-        <span class="all_checkout">全部提现</span>
+        <span class="all_checkout" @click="allCheckOut()">全部提现</span>
       </div>
       <div class="cash_checking">
         <div class="checking_">
           提现中金额
         </div>
         <div class="cash_">
-          10.88
+          {{allreadyMoney}}
         </div>
       </div>
     </div>
@@ -28,7 +28,7 @@
     <div class="checkout_tips">
       提现金额将在1-5个工作日打到微信零钱提现不收取手续费
     </div>
-    <div class="more_info">
+    <div class="more_info" @click="moreInfoClick">
       常见问题
     </div>
   </div>
@@ -39,10 +39,34 @@ export default {
   },
   data () {
     return {
-      money: ''
+      money: '',
+      balance: '',
+      allreadyMoney: '',
+      allchecked: false
     }
   },
   methods: {
+    allreadyChecked () {
+      // 提现中
+      let that = this
+      let postParams = {
+        memberId: this.memberId
+      }
+      this.request.get('/api/drawCaseRecord/inApplyByMember', postParams).then(res => {
+        that.allreadyMoney = res.data
+      }).catch(err => {
+        console.log(err)
+      })
+    },
+    moreInfoClick () {
+      wx.navigateTo({
+        url: '../more-info/main'
+      })
+    },
+    allCheckOut () {
+      this.allchecked = true
+      this.money = this.balance
+    },
     balanceDetail () {
       wx.navigateTo({
         url: '../balance-detail/main'
@@ -50,6 +74,10 @@ export default {
     },
     changeCash (e) {
       this.money = e.target.value
+      if (this.allchecked) {
+        this.money = this.balance
+        this.allchecked = false
+      }
     },
     rewithdraw () {
       // 提现
@@ -59,24 +87,55 @@ export default {
       let that = this
       let postParams = {
         money: this.money,
-        memberId: 100132
+        memberId: this.memberId
       }
       // 调用应用实例的方法获取全局数据
       this.request.post('/api/drawCaseRecord/apply', postParams).then(res => {
+        if (res.code === '12007') {
+          wx.showToast({
+            title: res.message,
+            icon: 'none'
+          })
+          return
+        }
         that.recordList = res.data.data
         wx.showToast({
           title: '已申请',
           icon: 'none'
         })
+        that.initData()
+        that.allreadyChecked()
+      })
+    },
+    initData () {
+      let that = this
+      this.memberId = wx.getStorageSync('memberId')
+      let postParams = {
+        memberId: this.memberId
+      }
+      // 调用应用实例的方法获取全局数据
+      this.request.get('/api/sys/config/memberInfo', postParams).then(res => {
+        that.balance = res.data.money
       }).catch(err => {
-        wx.showToast({
-          title: err.message,
-          icon: 'none'
-        })
+        console.log(err)
       })
     }
   },
   created () {
+  },
+  onShow () {
+    this.initData()
+    this.allreadyChecked()
+  },
+  onLoad () {
+    // let that = this
+    this.memberId = wx.getStorageSync('memberId')
+  },
+  onUnload () {
+    this.money = ''
+    this.balance = ''
+    this.allreadyMoney = ''
+    this.allchecked = false
   }
 }
 </script>

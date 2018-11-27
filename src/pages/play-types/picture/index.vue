@@ -20,12 +20,12 @@
      </div>
      <div class="edit_item">
        <div class="item_title">红包金额</div>
-      <div class="item_input"><input placeholder-class="place-holder" @change="fieldMoney" placeholder="填写金额" /></div>
+      <div class="item_input"><input placeholder-class="place-holder" type='number' @change="fieldMoney" placeholder="填写金额" /></div>
       <div class="next_step">元</div>
     </div>
     <div class="edit_item">
        <div class="item_title">红包数量</div>
-      <div class="item_input"><input placeholder-class="place-holder" @change="fieldNumber" placeholder="填写数量" /></div>
+      <div class="item_input"><input placeholder-class="place-holder" type='number' @change="fieldNumber" placeholder="填写数量" /></div>
       <div class="next_step">个</div>
     </div>
     <div class="edit_item" @click="pickerTimeData()">
@@ -49,7 +49,7 @@
       <div class="item_publish"><switch checked @change="switchChange"/></div>
     </div>
     <div class="fee_info">
-      需祝福¥0.00元服务费，优先使用余额¥8.06元。
+      需支付¥{{needFee}}元服务费，优先使用余额¥{{balance}}元。
     </div>
    </div>
    <div class="save_as_package" @click="makePicPackage()">
@@ -78,8 +78,10 @@ export default {
       timeSeconds: '',
       timeIndex: 0,
       isShowTimeModal: false,
-      money: '',
+      money: 0,
+      needFee: 0,
       num: '',
+      balance: 0,
       headImg: '../../../static/images/test_img.png',
       picData: '',
       isPublish: 1
@@ -113,6 +115,7 @@ export default {
     },
     fieldMoney (e) {
       this.money = e.target.value
+      this.needFee = e.target.value * 0.02
     },
     fieldNumber (e) {
       this.num = e.target.value
@@ -131,7 +134,7 @@ export default {
       }
       // 生成拼图红包
       let postParams = {
-        memberId: 100132,
+        memberId: this.memberId,
         type: 1, // 1-拼图 2-拼字 3-语音
         contentId, // '素材id'
         money, // 红包
@@ -141,36 +144,48 @@ export default {
         publish: isPublish, // 1-发布 2-不发布
         level: this.levelMap[this.levelIndex] // 难度 1， 2， 3
       }
-      console.log('postParams', postParams)
       // 调用应用实例的方法获取全局数据
       this.request.post('/api/sendOutRecord/commit', postParams).then(res => {
         let payType = res.data.payType
         let id = res.data.id
         let param = {
           id,
-          memberId: 100132
+          memberId: this.memberId
         }
         if (payType === 1) {
           // 余额支付
           this.request.get('/api/sendOutRecord/payByBalance', param).then(res => {
-            wx.navigateTo({
-              url: `/pages/red-package/detail/main?type=1&id=${id}`
-            })
+            if (res.code === '200') {
+              wx.navigateTo({
+                url: `/pages/red-package/detail/main?type=1&id=${id}`
+              })
+            }
           }).catch(err => {
             console.log(err)
           })
           return false
         }
+        let jsonobject = res.data.jsonobject
+        let {timeStamp, nonceStr, packageStr, paySign} = jsonobject
         wx.requestPayment(
-          // 微信支付
           {
-            timeStamp: '',
-            nonceStr: '',
-            package: '',
+            timeStamp,
+            nonceStr,
+            package: packageStr,
             signType: 'MD5',
-            paySign: '',
+            paySign,
             success: function (res) {
-
+              if (res.errMsg === 'requestPayment:ok') {
+                wx.navigateTo({
+                  url: `/pages/red-package/detail/main?type=1&id=${id}`
+                })
+              } else {
+                wx.showToast({
+                  title: '支付失败，请重新支付',
+                  icon: 'none',
+                  duration: 2000
+                })
+              }
             },
             fail: function (res) {
 
@@ -186,7 +201,34 @@ export default {
   },
   created () {
   },
+  // onUpload () {
+  //   console.log('我销毁了')
+  // },
+  // onHide () {
+  //   console.log('我藏起来了')
+  //   this.money = ''
+  //   this.num = ''
+  //   this.timeSeconds = ''
+  //   this.picData = ''
+  // },
   onShow () {
+    this.levelArray = ['3 X 3', '4 X 4', '5 X 5']
+    this.levelIndex = 0
+    this.levelMap = {
+      0: 1,
+      1: 2,
+      2: 3
+    }
+    this.timeSeconds = ''
+    this.timeIndex = 0
+    this.isShowTimeModal = false
+    this.money = 0
+    this.needFee = 0
+    this.num = ''
+    this.balance = 0
+    this.headImg = '../../../static/images/test_img.png'
+    this.picData = ''
+    this.isPublish = 1
     // eslint-disable-next-line
     let pages = getCurrentPages()
     let curPage = pages[pages.length - 1] // 素材库选择的内容
@@ -194,6 +236,37 @@ export default {
       this.picData = curPage.data.data
       this.contentId = curPage.data.contentId
     }
+    let that = this
+    this.memberId = wx.getStorageSync('memberId')
+    let postParams = {
+      memberId: this.memberId
+    }
+    // 获取余额
+    this.request.get('/api/sys/config/memberInfo', postParams).then(res => {
+      that.balance = res.data.money
+      that.headImg = res.data.headImg
+    }).catch(err => {
+      console.log(err)
+    })
+  },
+  onUnload () {
+    this.levelArray = ['3 X 3', '4 X 4', '5 X 5']
+    this.levelIndex = 0
+    this.levelMap = {
+      0: 1,
+      1: 2,
+      2: 3
+    }
+    this.timeSeconds = ''
+    this.timeIndex = 0
+    this.isShowTimeModal = false
+    this.money = 0
+    this.needFee = 0
+    this.num = ''
+    this.balance = 0
+    this.headImg = '../../../static/images/test_img.png'
+    this.picData = ''
+    this.isPublish = 1
   }
 }
 </script>
