@@ -53,7 +53,6 @@ export default {
     this.level = this.$root.$mp.query.level
     let imgOption = getBasicBlockInfo(this, this.levelMap[this.level], loadImgSrc.height)
     let imageInfos = getInitPositionList(imgOption)
-    console.log('loadImgSrc', loadImgSrc)
     piecesImage('startPic', loadImgSrc.path, imageInfos)
   }
 }

@@ -201,16 +201,6 @@ export default {
   },
   created () {
   },
-  // onUpload () {
-  //   console.log('我销毁了')
-  // },
-  // onHide () {
-  //   console.log('我藏起来了')
-  //   this.money = ''
-  //   this.num = ''
-  //   this.timeSeconds = ''
-  //   this.picData = ''
-  // },
   onShow () {
     this.levelArray = ['3 X 3', '4 X 4', '5 X 5']
     this.levelIndex = 0

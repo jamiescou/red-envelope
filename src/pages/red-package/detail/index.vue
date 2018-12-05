@@ -393,7 +393,6 @@ export default {
     this.recorderManager = wx.getRecorderManager() // 调用录音
     this.type = Number(this.$root.$mp.query.type) // 判断是什么红包 语音 文字 拼图
     this.id = Number(this.$root.$mp.query.id) // 红包id
-    console.log('onload== shareNo==>', this.$root.$mp.query)
     let titleName = '开口红包'
     this.redBtnName = '按住说出以上口令领取红包'
     this.jumpName = 'vioce'
